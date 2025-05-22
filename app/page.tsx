@@ -1,67 +1,262 @@
-"use client";
+import Link from "next/link"
+import { ArrowRight, Bot, Braces, LineChart, Rocket, Target } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ModeToggle } from "@/components/mode-toggle";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Slider } from "@/components/ui/slider";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button"
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit">
-          SaaSGuide UI Component Library
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black">
-          <div className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto">
-            <ModeToggle />
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center gap-2 font-bold">
+            <Bot className="h-6 w-6 text-primary" />
+            <span>SaaSGuide</span>
+          </div>
+          <nav className="hidden md:flex gap-6">
+            <Link
+              href="#features"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Features
+            </Link>
+            <Link
+              href="#how-it-works"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              How It Works
+            </Link>
+            <Link
+              href="#pricing"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Pricing
+            </Link>
+          </nav>
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm">
+                Login
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button size="sm">Get Started</Button>
+            </Link>
           </div>
         </div>
-      </div>
-
-      <Tabs defaultValue="basic" className="w-full max-w-5xl">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="basic">Basic Components</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced Components</TabsTrigger>
-          <TabsTrigger value="data">Data Components</TabsTrigger>
-        </TabsList>
-        
-        {/* Basic Components Tab */}
-        <TabsContent value="basic" className="mt-6">
-          <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-2 lg:text-left gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Button Component</CardTitle>
-                <CardDescription>
-                  Various button styles and variants
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <Button>Default Button</Button>
-                  <Button variant="secondary">Secondary Button</Button>
-                  <Button variant="destructive">Destructive Button</Button>
-                  <Button variant="outline">Outline Button</Button>
-                  <Button variant="ghost">Ghost Button</Button>
-                  <Button variant="link">Link Button</Button>
+      </header>
+      <main className="flex-1">
+        <section className="w-full py-24 md:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-10 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
+              <div className="flex flex-col justify-center space-y-4">
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
+                    Build Your Agentic SaaS Faster & Smarter
+                  </h1>
+                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                    Your all-in-one data room for development, marketing, and sales. From concept to launch and beyond.
+                  </p>
                 </div>
-                <div className="flex flex-wrap gap-4">
-                  <Button size="sm">Small Button</Button>
-                  <Button size="default">Default Size</Button>
-                  <Button size="lg">Large Button</Button>
-                  <Button size="icon">
+                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                  <Link href="/dashboard">
+                    <Button size="lg" className="gap-1.5">
+                      Start Building Now
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="#how-it-works">
+                    <Button size="lg" variant="outline">
+                      Learn More
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="flex items-center justify-center">
+                <div className="relative h-[450px] w-full overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-4">
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <div className="grid gap-8">
+                      <div className="flex items-center gap-4">
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <Braces className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Development Tracking</h3>
+                          <p className="text-sm text-muted-foreground">Monitor progress and milestones</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <Target className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Marketing Campaigns</h3>
+                          <p className="text-sm text-muted-foreground">Generate and track campaigns</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <LineChart className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Sales Analytics</h3>
+                          <p className="text-sm text-muted-foreground">Track conversions and revenue</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <Rocket className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">GTM Strategy</h3>
+                          <p className="text-sm text-muted-foreground">Launch with confidence</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
+                  Features
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need to Succeed</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  SaaSGuide provides all the tools you need to build, launch, and grow your agentic SaaS business.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Braces className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">Development Lifecycle</h3>
+                <p className="text-center text-muted-foreground">
+                  Step-by-step guidance through the entire development process for agentic SaaS applications.
+                </p>
+              </div>
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Target className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">Marketing Campaigns</h3>
+                <p className="text-center text-muted-foreground">
+                  Generate targeted marketing campaigns specifically designed for agentic SaaS products.
+                </p>
+              </div>
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <LineChart className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">Sales Tracking</h3>
+                <p className="text-center text-muted-foreground">
+                  Monitor your sales pipeline, conversions, and revenue with detailed analytics.
+                </p>
+              </div>
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Rocket className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">GTM Strategy</h3>
+                <p className="text-center text-muted-foreground">
+                  Create comprehensive go-to-market plans tailored to your agentic SaaS product.
+                </p>
+              </div>
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Bot className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">AI-Powered Insights</h3>
+                <p className="text-center text-muted-foreground">
+                  Get intelligent recommendations and insights to optimize your product and strategy.
+                </p>
+              </div>
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <ArrowRight className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">Progress Tracking</h3>
+                <p className="text-center text-muted-foreground">
+                  Track your progress across development, marketing, and sales in one unified dashboard.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
+                  How It Works
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Simple, Powerful, Effective</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Our platform guides you through every step of building and growing your agentic SaaS business.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-3">
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
+                  1
+                </div>
+                <h3 className="text-xl font-bold">Plan Your SaaS</h3>
+                <p className="text-center text-muted-foreground">
+                  Use our idea scorer and planning tools to validate and refine your agentic SaaS concept.
+                </p>
+              </div>
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
+                  2
+                </div>
+                <h3 className="text-xl font-bold">Build & Launch</h3>
+                <p className="text-center text-muted-foreground">
+                  Follow our development tracker to build your product and prepare for a successful launch.
+                </p>
+              </div>
+              <div className="flex flex-col items-center space-y-2 rounded-lg border p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
+                  3
+                </div>
+                <h3 className="text-xl font-bold">Grow & Scale</h3>
+                <p className="text-center text-muted-foreground">
+                  Use our marketing and sales tools to acquire customers and scale your business.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section id="pricing" className="w-full py-12 md:py-24 lg:py-32 bg-muted">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
+                  Pricing
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Choose Your Plan</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Simple, transparent pricing that grows with your business.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-3">
+              <div className="flex flex-col rounded-lg border bg-background p-6">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold">Starter</h3>
+                  <p className="text-muted-foreground">Perfect for indie developers and solopreneurs.</p>
+                </div>
+                <div className="mt-4 flex items-baseline text-3xl font-bold">
+                  $29<span className="text-sm font-normal text-muted-foreground">/month</span>
+                </div>
+                <ul className="mt-6 space-y-2 text-sm">
+                  <li className="flex items-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="24"
@@ -72,328 +267,274 @@ export default function Home() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
                     >
-                      <path d="M12 5v14" />
-                      <path d="M5 12h14" />
+                      <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
+                    Development tracker
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Basic marketing tools
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Basic GTM plan generator
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    1 project
+                  </li>
+                </ul>
+                <div className="mt-auto pt-6">
+                  <Link href="/signup?plan=starter">
+                    <Button className="w-full">Get Started</Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="flex flex-col rounded-lg border bg-background p-6 shadow-lg ring-2 ring-primary">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold">Pro</h3>
+                  <p className="text-muted-foreground">For growing startups and small teams.</p>
+                </div>
+                <div className="mt-4 flex items-baseline text-3xl font-bold">
+                  $79<span className="text-sm font-normal text-muted-foreground">/month</span>
+                </div>
+                <ul className="mt-6 space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Everything in Starter
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Advanced marketing campaign generator
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Sales tracking dashboard
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    3 projects
+                  </li>
+                </ul>
+                <div className="mt-auto pt-6">
+                  <Link href="/signup?plan=pro">
+                    <Button className="w-full">Get Started</Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="flex flex-col rounded-lg border bg-background p-6">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold">Enterprise</h3>
+                  <p className="text-muted-foreground">For established companies and larger teams.</p>
+                </div>
+                <div className="mt-4 flex items-baseline text-3xl font-bold">
+                  $199<span className="text-sm font-normal text-muted-foreground">/month</span>
+                </div>
+                <ul className="mt-6 space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Everything in Pro
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Custom AI-powered insights
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Priority support
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2 h-4 w-4 text-primary"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Unlimited projects
+                  </li>
+                </ul>
+                <div className="mt-auto pt-6">
+                  <Link href="/signup?plan=enterprise">
+                    <Button className="w-full">Get Started</Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to Build Your Agentic SaaS?</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Join thousands of founders who are building the future of software with SaaSGuide.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <Link href="/dashboard">
+                  <Button size="lg" className="gap-1.5">
+                    Get Started Now
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Input Component</CardTitle>
-                <CardDescription>
-                  Text input field with various states
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid w-full gap-4">
-                  <Input type="text" placeholder="Default input" />
-                  <Input type="text" placeholder="Disabled input" disabled />
-                  <Input type="email" placeholder="Email input" />
-                  <Input type="password" placeholder="Password input" />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full">Submit</Button>
-              </CardFooter>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Avatar Component</CardTitle>
-                <CardDescription>
-                  User avatars with image and fallback
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <Avatar>
-                    <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-                    <AvatarFallback>CN</AvatarFallback>
-                  </Avatar>
-                  <Avatar>
-                    <AvatarImage src="https://github.com/codegen.png" alt="@codegen" />
-                    <AvatarFallback>CG</AvatarFallback>
-                  </Avatar>
-                  <Avatar>
-                    <AvatarFallback>JD</AvatarFallback>
-                  </Avatar>
-                </div>
-              </CardContent>
-              <Separator />
-              <CardHeader>
-                <CardTitle>Badge Component</CardTitle>
-                <CardDescription>
-                  Status indicators and labels
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <Badge>Default</Badge>
-                  <Badge variant="secondary">Secondary</Badge>
-                  <Badge variant="destructive">Destructive</Badge>
-                  <Badge variant="outline">Outline</Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Checkbox Component</CardTitle>
-                <CardDescription>
-                  Selection controls for forms
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="terms" />
-                  <label
-                    htmlFor="terms"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Accept terms and conditions
-                  </label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="newsletter" defaultChecked />
-                  <label
-                    htmlFor="newsletter"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Subscribe to newsletter
-                  </label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="disabled" disabled />
-                  <label
-                    htmlFor="disabled"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Disabled option
-                  </label>
-                </div>
-              </CardContent>
-            </Card>
+                </Link>
+              </div>
+            </div>
           </div>
-        </TabsContent>
-        
-        {/* Advanced Components Tab */}
-        <TabsContent value="advanced" className="mt-6">
-          <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-2 lg:text-left gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dialog Component</CardTitle>
-                <CardDescription>
-                  Modal dialog for important actions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button>Open Dialog</Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Edit Profile</DialogTitle>
-                      <DialogDescription>
-                        Make changes to your profile here. Click save when you&apos;re done.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                          Name
-                        </Label>
-                        <Input id="name" value="John Doe" className="col-span-3" />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="username" className="text-right">
-                          Username
-                        </Label>
-                        <Input id="username" value="@johndoe" className="col-span-3" />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit">Save changes</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Select Component</CardTitle>
-                <CardDescription>
-                  Dropdown selection control
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid w-full gap-4">
-                  <Select>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a fruit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="apple">Apple</SelectItem>
-                      <SelectItem value="banana">Banana</SelectItem>
-                      <SelectItem value="orange">Orange</SelectItem>
-                      <SelectItem value="grape">Grape</SelectItem>
-                      <SelectItem value="pineapple">Pineapple</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tabs Component</CardTitle>
-                <CardDescription>
-                  Tabbed interface for organizing content
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Tabs defaultValue="account" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="account">Account</TabsTrigger>
-                    <TabsTrigger value="password">Password</TabsTrigger>
-                    <TabsTrigger value="settings">Settings</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="account" className="p-4 border rounded-md mt-2">
-                    <p>Account settings tab content</p>
-                  </TabsContent>
-                  <TabsContent value="password" className="p-4 border rounded-md mt-2">
-                    <p>Password settings tab content</p>
-                  </TabsContent>
-                  <TabsContent value="settings" className="p-4 border rounded-md mt-2">
-                    <p>General settings tab content</p>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tooltip Component</CardTitle>
-                <CardDescription>
-                  Contextual information on hover
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-center">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline">Hover Me</Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>This is a tooltip with helpful information</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </CardContent>
-            </Card>
+        </section>
+      </main>
+      <footer className="w-full border-t py-6 md:py-0">
+        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+          <div className="flex items-center gap-2 font-bold">
+            <Bot className="h-6 w-6 text-primary" />
+            <span>SaaSGuide</span>
           </div>
-        </TabsContent>
-        
-        {/* Data Components Tab */}
-        <TabsContent value="data" className="mt-6">
-          <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-2 lg:text-left gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Table Component</CardTitle>
-                <CardDescription>
-                  Display tabular data with sorting and pagination
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Table>
-                  <TableCaption>A list of recent invoices</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-medium">INV001</TableCell>
-                      <TableCell>Paid</TableCell>
-                      <TableCell>Credit Card</TableCell>
-                      <TableCell className="text-right">$250.00</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">INV002</TableCell>
-                      <TableCell>Pending</TableCell>
-                      <TableCell>PayPal</TableCell>
-                      <TableCell className="text-right">$125.00</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">INV003</TableCell>
-                      <TableCell>Unpaid</TableCell>
-                      <TableCell>Bank Transfer</TableCell>
-                      <TableCell className="text-right">$350.00</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Slider Component</CardTitle>
-                <CardDescription>
-                  Interactive slider for selecting values
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                <div>
-                  <h4 className="mb-4 text-sm font-medium">Single Value Slider</h4>
-                  <Slider defaultValue={[50]} max={100} step={1} />
-                </div>
-                <div>
-                  <h4 className="mb-4 text-sm font-medium">Range Slider</h4>
-                  <Slider defaultValue={[25, 75]} max={100} step={1} />
-                </div>
-              </CardContent>
-              <Separator />
-              <CardHeader>
-                <CardTitle>Progress Component</CardTitle>
-                <CardDescription>
-                  Display progress of tasks or operations
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">25%</span>
-                  </div>
-                  <Progress value={25} />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">50%</span>
-                  </div>
-                  <Progress value={50} />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">75%</span>
-                  </div>
-                  <Progress value={75} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </main>
-  );
+          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+            © 2025 SaaSGuide. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
+  )
 }
+
