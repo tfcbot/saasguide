@@ -72,8 +72,7 @@ export function SalesTracker() {
       company: "TechCorp",
       status: "closed-won",
       value: 12500,
-      lastContact: "2025-05-15",
-      avatar: "/avatars/01.png"
+      lastContact: "2025-05-15"
     },
     {
       id: "2",
@@ -82,8 +81,7 @@ export function SalesTracker() {
       company: "Innovate.io",
       status: "negotiation",
       value: 8750,
-      lastContact: "2025-05-18",
-      avatar: "/avatars/02.png"
+      lastContact: "2025-05-18"
     },
     {
       id: "3",
@@ -92,8 +90,7 @@ export function SalesTracker() {
       company: "FutureAI",
       status: "proposal",
       value: 15000,
-      lastContact: "2025-05-20",
-      avatar: "/avatars/03.png"
+      lastContact: "2025-05-20"
     },
     {
       id: "4",
@@ -102,8 +99,7 @@ export function SalesTracker() {
       company: "DataFlow",
       status: "opportunity",
       value: 6500,
-      lastContact: "2025-05-17",
-      avatar: "/avatars/04.png"
+      lastContact: "2025-05-17"
     },
     {
       id: "5",
@@ -112,8 +108,7 @@ export function SalesTracker() {
       company: "NextStep Technologies",
       status: "lead",
       value: 4000,
-      lastContact: "2025-05-19",
-      avatar: "/avatars/05.png"
+      lastContact: "2025-05-19"
     },
     {
       id: "6",
@@ -122,8 +117,7 @@ export function SalesTracker() {
       company: "CloudMatrix",
       status: "closed-lost",
       value: 9500,
-      lastContact: "2025-05-10",
-      avatar: "/avatars/06.png"
+      lastContact: "2025-05-10"
     }
   ]
 
@@ -439,4 +433,3 @@ export function SalesTracker() {
     </div>
   )
 }
-
