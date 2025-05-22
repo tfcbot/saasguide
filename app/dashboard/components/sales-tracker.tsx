@@ -2,24 +2,15 @@
 
 import { useState } from "react"
 import { 
-  ArrowUpRight, 
   BarChart3, 
-  Calendar, 
-  ChevronDown, 
   Clock, 
   DollarSign, 
-  Download, 
   Filter, 
   LineChart, 
   MoreHorizontal, 
   PieChart, 
-  Plus, 
-  Search, 
-  ShoppingCart, 
   Tag, 
-  Target, 
-  TrendingUp, 
-  Users 
+  TrendingUp
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -27,11 +18,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 type Customer = {
   id: string

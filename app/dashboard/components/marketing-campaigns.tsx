@@ -2,10 +2,8 @@
 
 import { useState } from "react"
 import { 
-  ArrowUpRight, 
   BarChart3, 
   Calendar, 
-  ChevronDown, 
   Copy, 
   Edit, 
   Eye, 
@@ -21,9 +19,8 @@ import {
   Target, 
   Trash, 
   TrendingUp, 
-  Users 
+  Users
 } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -403,9 +400,8 @@ export function MarketingCampaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeCampaigns.length}</div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {activeCampaigns.length === 0 ? "No active campaigns" : 
-                `${activeCampaigns.map(c => c.type).join(", ")}`}
+            <p className="mt-2 text-sm text-muted-foreground">
+              You don&apos;t have any active campaigns. Create a new campaign to get started.
             </p>
           </CardContent>
         </Card>
@@ -497,7 +493,7 @@ export function MarketingCampaigns() {
               </div>
               <h3 className="mt-4 text-lg font-semibold">No Active Campaigns</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                You don't have any active campaigns. Create a new campaign to get started.
+                You don&apos;t have any active campaigns. Create a new campaign to get started.
               </p>
               <Button className="mt-4">Create Campaign</Button>
             </Card>
@@ -516,9 +512,8 @@ export function MarketingCampaigns() {
               </div>
               <h3 className="mt-4 text-lg font-semibold">No Draft Campaigns</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                You don't have any draft campaigns. Create a new campaign to get started.
+                You don&apos;t have any draft campaigns. Create a new campaign to get started.
               </p>
-              <Button className="mt-4">Create Campaign</Button>
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -535,7 +530,7 @@ export function MarketingCampaigns() {
               </div>
               <h3 className="mt-4 text-lg font-semibold">No Scheduled Campaigns</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                You don't have any scheduled campaigns. Schedule a campaign to get started.
+                You don&apos;t have any scheduled campaigns. Schedule a campaign to get started.
               </p>
               <Button className="mt-4">Schedule Campaign</Button>
             </Card>
@@ -554,7 +549,7 @@ export function MarketingCampaigns() {
               </div>
               <h3 className="mt-4 text-lg font-semibold">No Completed Campaigns</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                You don't have any completed campaigns yet.
+                You don&apos;t have any completed campaigns yet.
               </p>
             </Card>
           ) : (
@@ -593,4 +588,3 @@ function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
-
