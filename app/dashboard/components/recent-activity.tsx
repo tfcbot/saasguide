@@ -14,139 +14,151 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type ActivityItem = {
   id: string
-  type: "task" | "comment" | "document" | "meeting"
+  type: "comment" | "task" | "document" | "meeting" | "code"
   title: string
   description: string
-  timestamp: string
+  date: string
+  time: string
   icon: React.ReactNode
-  category: "development" | "marketing" | "sales" | "general"
+  unread?: boolean
 }
 
-const activityItems: ActivityItem[] = [
-  {
-    id: "1",
-    type: "task",
-    title: "API Documentation Completed",
-    description: "The API documentation has been completed and is ready for review.",
-    timestamp: "2 hours ago",
-    icon: <Code className="h-4 w-4" />,
-    category: "development"
-  },
-  {
-    id: "2",
-    type: "comment",
-    title: "New Comment on Marketing Plan",
-    description: "Sarah left a comment on the Q3 marketing plan document.",
-    timestamp: "3 hours ago",
-    icon: <MessageSquare className="h-4 w-4" />,
-    category: "marketing"
-  },
-  {
-    id: "3",
-    type: "task",
-    title: "User Authentication Implemented",
-    description: "The user authentication system has been implemented and tested.",
-    timestamp: "5 hours ago",
-    icon: <Check className="h-4 w-4" />,
-    category: "development"
-  },
-  {
-    id: "4",
-    type: "document",
-    title: "Sales Proposal Updated",
-    description: "The sales proposal for Enterprise clients has been updated.",
-    timestamp: "Yesterday",
-    icon: <FileText className="h-4 w-4" />,
-    category: "sales"
-  },
-  {
-    id: "5",
-    type: "meeting",
-    title: "Weekly Team Sync",
-    description: "The weekly team sync meeting was held with all stakeholders.",
-    timestamp: "Yesterday",
-    icon: <Calendar className="h-4 w-4" />,
-    category: "general"
-  },
-  {
-    id: "6",
-    type: "task",
-    title: "Email Campaign Scheduled",
-    description: "The Q3 email campaign has been scheduled for next week.",
-    timestamp: "2 days ago",
-    icon: <Target className="h-4 w-4" />,
-    category: "marketing"
-  },
-  {
-    id: "7",
-    type: "comment",
-    title: "New Comment on Sales Pipeline",
-    description: "Alex left a comment on the current sales pipeline status.",
-    timestamp: "2 days ago",
-    icon: <MessageSquare className="h-4 w-4" />,
-    category: "sales"
-  },
-  {
-    id: "8",
-    type: "task",
-    title: "Customer Onboarding Flow Updated",
-    description: "The customer onboarding flow has been updated with new steps.",
-    timestamp: "3 days ago",
-    icon: <Users className="h-4 w-4" />,
-    category: "development"
-  }
-]
-
 export function RecentActivity() {
-  const [filter, setFilter] = useState<"all" | "development" | "marketing" | "sales" | "general">("all")
+  const [filter, setFilter] = useState<string>("all")
   
+  const activityItems: ActivityItem[] = [
+    {
+      id: "1",
+      type: "code",
+      title: "Updated development tracker component",
+      description: "Added progress tracking and phase management",
+      date: "Today",
+      time: "2:30 PM",
+      icon: <Code className="h-4 w-4" />,
+      unread: true
+    },
+    {
+      id: "2",
+      type: "task",
+      title: "Completed user authentication flow",
+      description: "Implemented login, registration, and password reset",
+      date: "Today",
+      time: "11:15 AM",
+      icon: <Check className="h-4 w-4" />,
+      unread: true
+    },
+    {
+      id: "3",
+      type: "document",
+      title: "Updated product requirements document",
+      description: "Added new features for Q3 roadmap",
+      date: "Yesterday",
+      time: "4:45 PM",
+      icon: <FileText className="h-4 w-4" />
+    },
+    {
+      id: "4",
+      type: "meeting",
+      title: "Product strategy meeting",
+      description: "Discussed roadmap and prioritization",
+      date: "Yesterday",
+      time: "2:00 PM",
+      icon: <Calendar className="h-4 w-4" />
+    },
+    {
+      id: "5",
+      type: "task",
+      title: "Defined marketing campaign metrics",
+      description: "Set up tracking for new campaign launch",
+      date: "May 20",
+      time: "10:30 AM",
+      icon: <Target className="h-4 w-4" />
+    },
+    {
+      id: "6",
+      type: "comment",
+      title: "New comment on sales dashboard",
+      description: "Jane: 'Can we add filtering by region?'",
+      date: "May 19",
+      time: "3:15 PM",
+      icon: <MessageSquare className="h-4 w-4" />
+    },
+    {
+      id: "7",
+      type: "meeting",
+      title: "User research session",
+      description: "Interviewed 5 customers about new features",
+      date: "May 18",
+      time: "1:00 PM",
+      icon: <Users className="h-4 w-4" />
+    }
+  ]
+
   const filteredActivities = filter === "all" 
     ? activityItems 
-    : activityItems.filter(item => item.category === filter)
+    : activityItems.filter(item => item.type === filter)
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>Latest updates from your project</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="all" className="mb-4">
-          <TabsList className="grid grid-cols-5 w-full">
-            <TabsTrigger value="all" onClick={() => setFilter("all")}>All</TabsTrigger>
-            <TabsTrigger value="development" onClick={() => setFilter("development")}>Dev</TabsTrigger>
-            <TabsTrigger value="marketing" onClick={() => setFilter("marketing")}>Marketing</TabsTrigger>
-            <TabsTrigger value="sales" onClick={() => setFilter("sales")}>Sales</TabsTrigger>
-            <TabsTrigger value="general" onClick={() => setFilter("general")}>General</TabsTrigger>
+        <CardDescription>
+          Stay updated on the latest activities in your SaaS
+        </CardDescription>
+        <Tabs defaultValue="all" className="mt-2" onValueChange={setFilter}>
+          <TabsList className="grid grid-cols-5">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="code">Code</TabsTrigger>
+            <TabsTrigger value="task">Tasks</TabsTrigger>
+            <TabsTrigger value="document">Docs</TabsTrigger>
+            <TabsTrigger value="meeting">Meetings</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="space-y-4 max-h-[350px] overflow-auto pr-2">
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="space-y-0 divide-y">
           {filteredActivities.map((item) => (
-            <div key={item.id} className="flex items-start gap-3 pb-4 border-b last:border-0">
-              <div className={`rounded-full p-1.5 mt-0.5 ${
-                item.category === "development" ? "bg-blue-100 text-blue-600" :
-                item.category === "marketing" ? "bg-green-100 text-green-600" :
-                item.category === "sales" ? "bg-purple-100 text-purple-600" :
+            <div 
+              key={item.id} 
+              className={`flex items-start gap-4 p-4 ${item.unread ? "bg-muted/50" : ""}`}
+            >
+              <div className={`rounded-full p-2 ${
+                item.type === "code" ? "bg-blue-100 text-blue-600" :
+                item.type === "task" ? "bg-green-100 text-green-600" :
+                item.type === "document" ? "bg-amber-100 text-amber-600" :
+                item.type === "meeting" ? "bg-purple-100 text-purple-600" :
                 "bg-gray-100 text-gray-600"
               }`}>
                 {item.icon}
               </div>
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
-                  <p className="font-medium text-sm">{item.title}</p>
-                  <span className="text-xs text-muted-foreground">{item.timestamp}</span>
+                  <p className="text-sm font-medium leading-none">
+                    {item.title}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {item.unread && (
+                      <div className="h-2 w-2 rounded-full bg-blue-600" />
+                    )}
+                    <p className="text-xs text-muted-foreground">{item.time}</p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {item.description}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {item.date}
+                </p>
               </div>
             </div>
           ))}
         </div>
       </CardContent>
-      <CardFooter className="border-t pt-4 flex justify-between">
+      <CardFooter className="flex justify-between py-3">
         <p className="text-xs text-muted-foreground">Showing {filteredActivities.length} of {activityItems.length} activities</p>
         <Button variant="ghost" size="sm" className="gap-1">
           View All

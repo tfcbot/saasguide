@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { 
   ArrowUpRight, 
-  Check, 
   ChevronDown, 
   ChevronRight, 
   Code, 
@@ -452,4 +451,3 @@ export function DevelopmentTracker() {
     </div>
   )
 }
-
