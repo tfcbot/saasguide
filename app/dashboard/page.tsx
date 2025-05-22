@@ -21,6 +21,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { AIInsights } from "./components/ai-insights"
+import { RecentActivity } from "./components/recent-activity"
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -279,6 +281,10 @@ export default function DashboardPage() {
                       </CardContent>
                     </Card>
                   </div>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <RecentActivity />
+                    <AIInsights />
+                  </div>
                 </TabsContent>
                 <TabsContent value="development" className="space-y-6">
                   <Card>
@@ -343,4 +349,3 @@ export default function DashboardPage() {
     </SidebarProvider>
   )
 }
-
