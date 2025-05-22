@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sidebar"
 import { AIInsights } from "./components/ai-insights"
 import { DevelopmentTracker } from "./components/development-tracker"
+import { MarketingCampaigns } from "./components/marketing-campaigns"
 import { RecentActivity } from "./components/recent-activity"
 
 export default function DashboardPage() {
@@ -291,15 +292,7 @@ export default function DashboardPage() {
                   <DevelopmentTracker />
                 </TabsContent>
                 <TabsContent value="marketing" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Marketing Campaigns</CardTitle>
-                      <CardDescription>Create and manage marketing campaigns for your agentic SaaS</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p>Marketing campaigns content will be implemented in a future task.</p>
-                    </CardContent>
-                  </Card>
+                  <MarketingCampaigns />
                 </TabsContent>
                 <TabsContent value="sales" className="space-y-6">
                   <Card>
