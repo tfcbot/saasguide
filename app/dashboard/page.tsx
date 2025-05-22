@@ -24,6 +24,7 @@ import {
 import { AIInsights } from "./components/ai-insights"
 import { DevelopmentTracker } from "./components/development-tracker"
 import { MarketingCampaigns } from "./components/marketing-campaigns"
+import { SalesTracker } from "./components/sales-tracker"
 import { RecentActivity } from "./components/recent-activity"
 
 export default function DashboardPage() {
@@ -295,15 +296,7 @@ export default function DashboardPage() {
                   <MarketingCampaigns />
                 </TabsContent>
                 <TabsContent value="sales" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Sales Tracker</CardTitle>
-                      <CardDescription>Track and manage your sales pipeline</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p>Sales tracker content will be implemented in a future task.</p>
-                    </CardContent>
-                  </Card>
+                  <SalesTracker />
                 </TabsContent>
                 <TabsContent value="roadmap" className="space-y-6">
                   <Card>
