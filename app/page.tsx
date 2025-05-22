@@ -24,6 +24,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
   return (
@@ -40,10 +43,13 @@ export default function Home() {
       </div>
 
       <Tabs defaultValue="basic" className="w-full max-w-5xl">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="basic">Basic Components</TabsTrigger>
           <TabsTrigger value="advanced">Advanced Components</TabsTrigger>
+          <TabsTrigger value="data">Data Components</TabsTrigger>
         </TabsList>
+        
+        {/* Basic Components Tab */}
         <TabsContent value="basic" className="mt-6">
           <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-2 lg:text-left gap-8">
             <Card>
@@ -184,6 +190,8 @@ export default function Home() {
             </Card>
           </div>
         </TabsContent>
+        
+        {/* Advanced Components Tab */}
         <TabsContent value="advanced" className="mt-6">
           <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-2 lg:text-left gap-8">
             <Card>
@@ -298,6 +306,99 @@ export default function Home() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        {/* Data Components Tab */}
+        <TabsContent value="data" className="mt-6">
+          <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-2 lg:text-left gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Table Component</CardTitle>
+                <CardDescription>
+                  Display tabular data with sorting and pagination
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Table>
+                  <TableCaption>A list of recent invoices</TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">INV001</TableCell>
+                      <TableCell>Paid</TableCell>
+                      <TableCell>Credit Card</TableCell>
+                      <TableCell className="text-right">$250.00</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">INV002</TableCell>
+                      <TableCell>Pending</TableCell>
+                      <TableCell>PayPal</TableCell>
+                      <TableCell className="text-right">$125.00</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">INV003</TableCell>
+                      <TableCell>Unpaid</TableCell>
+                      <TableCell>Bank Transfer</TableCell>
+                      <TableCell className="text-right">$350.00</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Slider Component</CardTitle>
+                <CardDescription>
+                  Interactive slider for selecting values
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div>
+                  <h4 className="mb-4 text-sm font-medium">Single Value Slider</h4>
+                  <Slider defaultValue={[50]} max={100} step={1} />
+                </div>
+                <div>
+                  <h4 className="mb-4 text-sm font-medium">Range Slider</h4>
+                  <Slider defaultValue={[25, 75]} max={100} step={1} />
+                </div>
+              </CardContent>
+              <Separator />
+              <CardHeader>
+                <CardTitle>Progress Component</CardTitle>
+                <CardDescription>
+                  Display progress of tasks or operations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">25%</span>
+                  </div>
+                  <Progress value={25} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">50%</span>
+                  </div>
+                  <Progress value={50} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">75%</span>
+                  </div>
+                  <Progress value={75} />
                 </div>
               </CardContent>
             </Card>

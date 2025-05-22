@@ -18,6 +18,7 @@ This UI component library is built with shadcn/ui, Tailwind CSS, and Radix UI pr
 - `Select`: Dropdown selection control
 - `Label`: Text label for form controls
 - `Form`: Form components with validation support
+- `Slider`: Interactive slider for selecting values
 
 ### Data Display Components
 - `Avatar`: User profile picture with fallback
@@ -25,6 +26,8 @@ This UI component library is built with shadcn/ui, Tailwind CSS, and Radix UI pr
 - `DropdownMenu`: Menu that appears when triggered by a button
 - `Dialog`: Modal dialog for important actions
 - `Tooltip`: Contextual information on hover
+- `Table`: Display tabular data with sorting and pagination
+- `Progress`: Display progress of tasks or operations
 
 ## Theme System
 
@@ -118,6 +121,46 @@ export function ProfileForm() {
         <Button type="submit">Submit</Button>
       </form>
     </Form>
+  );
+}
+```
+
+## Data Tables
+
+The Table component provides a way to display tabular data:
+
+```tsx
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+export function InvoicesTable() {
+  return (
+    <Table>
+      <TableCaption>A list of your recent invoices.</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Invoice</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Method</TableHead>
+          <TableHead className="text-right">Amount</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow>
+          <TableCell className="font-medium">INV001</TableCell>
+          <TableCell>Paid</TableCell>
+          <TableCell>Credit Card</TableCell>
+          <TableCell className="text-right">$250.00</TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   );
 }
 ```
