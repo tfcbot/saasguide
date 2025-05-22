@@ -22,6 +22,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { AIInsights } from "./components/ai-insights"
+import { DevelopmentTracker } from "./components/development-tracker"
 import { RecentActivity } from "./components/recent-activity"
 
 export default function DashboardPage() {
@@ -287,15 +288,7 @@ export default function DashboardPage() {
                   </div>
                 </TabsContent>
                 <TabsContent value="development" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Development Tracker</CardTitle>
-                      <CardDescription>Track and manage your agentic SaaS development lifecycle</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p>Development tracker content will be implemented in a future task.</p>
-                    </CardContent>
-                  </Card>
+                  <DevelopmentTracker />
                 </TabsContent>
                 <TabsContent value="marketing" className="space-y-6">
                   <Card>
