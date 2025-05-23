@@ -1,0 +1,375 @@
+From df6a16dda4771351ecc92292c417285d1932ae69 Mon Sep 17 00:00:00 2001
+From: "codegen-sh[bot]" <131295404+codegen-sh[bot]@users.noreply.github.com>
+Date: Fri, 23 May 2025 14:23:37 +0000
+Subject: [PATCH] Implement user and authentication data models
+
+- Add users table with Clerk integration
+- Add userPreferences table for personalization
+- Implement user management functions (CRUD operations)
+- Set up authentication configuration for Clerk
+- Add proper indexes for efficient queries
+- Include data validation and error handling
+
+Resolves DEV-79
+---
+ convex/auth.config.ts     |  17 ++---
+ convex/schema.ts          |  29 ++++++--
+ convex/userPreferences.ts | 129 ++++++++++++++++++++++++++++++++++
+ convex/users.ts           | 143 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 302 insertions(+), 16 deletions(-)
+ create mode 100644 convex/userPreferences.ts
+ create mode 100644 convex/users.ts
+
+diff --git a/convex/auth.config.ts b/convex/auth.config.ts
+index 4da3f17..6caa3b7 100644
+--- a/convex/auth.config.ts
++++ b/convex/auth.config.ts
+@@ -1,15 +1,8 @@
+-const authConfig = {
++export default {
+   providers: [
+-    // Uncomment this once you have set up a Clerk app
+-    // {
+-    //   // Replace with your own Clerk Issuer URL from your "convex" JWT template
+-    //   // or with `process.env.CLERK_JWT_ISSUER_DOMAIN`
+-    //   // and configure CLERK_JWT_ISSUER_DOMAIN on the Convex Dashboard
+-    //   // See https://docs.convex.dev/auth/clerk#configuring-dev-and-prod-instances
+-    //   domain: process.env.CLERK_JWT_ISSUER_DOMAIN,
+-    //   applicationID: "convex",
+-    // },
++    {
++      domain: process.env.CLERK_JWT_ISSUER_DOMAIN,
++      applicationID: "convex",
++    },
+   ],
+ };
+-
+-export default authConfig;
+diff --git a/convex/schema.ts b/convex/schema.ts
+index b1bc23e..eab3855 100644
+--- a/convex/schema.ts
++++ b/convex/schema.ts
+@@ -1,11 +1,32 @@
+ import { defineSchema, defineTable } from "convex/server";
+ import { v } from "convex/values";
+ 
+-// The schema is entirely optional.
+-// You can delete this file (schema.ts) and the
+-// app will continue to work.
+-// The schema provides more precise TypeScript types.
++// The schema defines the structure of your Convex database
++// This provides TypeScript types and runtime validation
+ export default defineSchema({
++  // User data model for authentication and profile management
++  users: defineTable({
++    name: v.string(),
++    email: v.string(),
++    clerkId: v.string(),
++    profileImageUrl: v.optional(v.string()),
++    role: v.optional(v.string()),
++    createdAt: v.number(),
++    updatedAt: v.number(),
++  }).index("by_clerk_id", ["clerkId"]),
++
++  // User preferences for personalization
++  userPreferences: defineTable({
++    userId: v.id("users"),
++    theme: v.optional(v.string()),
++    notifications: v.optional(v.boolean()),
++    emailFrequency: v.optional(v.string()),
++    dashboardLayout: v.optional(v.array(v.string())),
++    createdAt: v.number(),
++    updatedAt: v.number(),
++  }).index("by_user_id", ["userId"]),
++
++  // Keep the existing numbers table for backward compatibility
+   numbers: defineTable({
+     value: v.number(),
+   }),
+diff --git a/convex/userPreferences.ts b/convex/userPreferences.ts
+new file mode 100644
+index 0000000..4b21708
+--- /dev/null
++++ b/convex/userPreferences.ts
+@@ -0,0 +1,129 @@
++import { v } from "convex/values";
++import { query, mutation } from "./_generated/server";
++
++// Get user preferences
++export const getUserPreferences = query({
++  args: {},
++  handler: async (ctx) => {
++    const identity = await ctx.auth.getUserIdentity();
++    if (!identity) {
++      return null;
++    }
++
++    const user = await ctx.db
++      .query("users")
++      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
++      .unique();
++
++    if (!user) {
++      return null;
++    }
++
++    const preferences = await ctx.db
++      .query("userPreferences")
++      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
++      .unique();
++
++    return preferences;
++  },
++});
++
++// Update user preferences
++export const updateUserPreferences = mutation({
++  args: {
++    theme: v.optional(v.string()),
++    notifications: v.optional(v.boolean()),
++    emailFrequency: v.optional(v.string()),
++    dashboardLayout: v.optional(v.array(v.string())),
++  },
++  handler: async (ctx, args) => {
++    const identity = await ctx.auth.getUserIdentity();
++    if (!identity) {
++      throw new Error("Not authenticated");
++    }
++
++    const user = await ctx.db
++      .query("users")
++      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
++      .unique();
++
++    if (!user) {
++      throw new Error("User not found");
++    }
++
++    const existingPreferences = await ctx.db
++      .query("userPreferences")
++      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
++      .unique();
++
++    const now = Date.now();
++
++    if (existingPreferences) {
++      // Update existing preferences
++      await ctx.db.patch(existingPreferences._id, {
++        ...args,
++        updatedAt: now,
++      });
++      return existingPreferences._id;
++    } else {
++      // Create new preferences
++      const preferencesId = await ctx.db.insert("userPreferences", {
++        userId: user._id,
++        theme: args.theme || "light",
++        notifications: args.notifications ?? true,
++        emailFrequency: args.emailFrequency || "weekly",
++        dashboardLayout: args.dashboardLayout || ["overview", "development", "marketing", "sales"],
++        createdAt: now,
++        updatedAt: now,
++      });
++      return preferencesId;
++    }
++  },
++});
++
++// Reset user preferences to defaults
++export const resetUserPreferences = mutation({
++  args: {},
++  handler: async (ctx) => {
++    const identity = await ctx.auth.getUserIdentity();
++    if (!identity) {
++      throw new Error("Not authenticated");
++    }
++
++    const user = await ctx.db
++      .query("users")
++      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
++      .unique();
++
++    if (!user) {
++      throw new Error("User not found");
++    }
++
++    const existingPreferences = await ctx.db
++      .query("userPreferences")
++      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
++      .unique();
++
++    const now = Date.now();
++    const defaultPreferences = {
++      theme: "light",
++      notifications: true,
++      emailFrequency: "weekly",
++      dashboardLayout: ["overview", "development", "marketing", "sales"],
++      updatedAt: now,
++    };
++
++    if (existingPreferences) {
++      await ctx.db.patch(existingPreferences._id, defaultPreferences);
++      return existingPreferences._id;
++    } else {
++      const preferencesId = await ctx.db.insert("userPreferences", {
++        userId: user._id,
++        ...defaultPreferences,
++        createdAt: now,
++      });
++      return preferencesId;
++    }
++  },
++});
++
+diff --git a/convex/users.ts b/convex/users.ts
+new file mode 100644
+index 0000000..d9334c4
+--- /dev/null
++++ b/convex/users.ts
+@@ -0,0 +1,143 @@
++import { v } from "convex/values";
++import { query, mutation } from "./_generated/server";
++
++// Get current user from Clerk authentication
++export const getCurrentUser = query({
++  args: {},
++  handler: async (ctx) => {
++    const identity = await ctx.auth.getUserIdentity();
++    if (!identity) {
++      return null;
++    }
++
++    const user = await ctx.db
++      .query("users")
++      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
++      .unique();
++
++    return user;
++  },
++});
++
++// Get user by ID
++export const getUserById = query({
++  args: { userId: v.id("users") },
++  handler: async (ctx, args) => {
++    return await ctx.db.get(args.userId);
++  },
++});
++
++// Create or update user from Clerk webhook
++export const createOrUpdateUser = mutation({
++  args: {
++    clerkId: v.string(),
++    name: v.string(),
++    email: v.string(),
++    profileImageUrl: v.optional(v.string()),
++    role: v.optional(v.string()),
++  },
++  handler: async (ctx, args) => {
++    const existingUser = await ctx.db
++      .query("users")
++      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
++      .unique();
++
++    const now = Date.now();
++
++    if (existingUser) {
++      // Update existing user
++      await ctx.db.patch(existingUser._id, {
++        name: args.name,
++        email: args.email,
++        profileImageUrl: args.profileImageUrl,
++        role: args.role,
++        updatedAt: now,
++      });
++      return existingUser._id;
++    } else {
++      // Create new user
++      const userId = await ctx.db.insert("users", {
++        clerkId: args.clerkId,
++        name: args.name,
++        email: args.email,
++        profileImageUrl: args.profileImageUrl,
++        role: args.role,
++        createdAt: now,
++        updatedAt: now,
++      });
++
++      // Create default user preferences
++      await ctx.db.insert("userPreferences", {
++        userId,
++        theme: "light",
++        notifications: true,
++        emailFrequency: "weekly",
++        dashboardLayout: ["overview", "development", "marketing", "sales"],
++        createdAt: now,
++        updatedAt: now,
++      });
++
++      return userId;
++    }
++  },
++});
++
++// Update user profile
++export const updateUserProfile = mutation({
++  args: {
++    name: v.optional(v.string()),
++    profileImageUrl: v.optional(v.string()),
++    role: v.optional(v.string()),
++  },
++  handler: async (ctx, args) => {
++    const identity = await ctx.auth.getUserIdentity();
++    if (!identity) {
++      throw new Error("Not authenticated");
++    }
++
++    const user = await ctx.db
++      .query("users")
++      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
++      .unique();
++
++    if (!user) {
++      throw new Error("User not found");
++    }
++
++    await ctx.db.patch(user._id, {
++      ...args,
++      updatedAt: Date.now(),
++    });
++
++    return user._id;
++  },
++});
++
++// Delete user
++export const deleteUser = mutation({
++  args: { clerkId: v.string() },
++  handler: async (ctx, args) => {
++    const user = await ctx.db
++      .query("users")
++      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
++      .unique();
++
++    if (!user) {
++      throw new Error("User not found");
++    }
++
++    // Delete user preferences
++    const preferences = await ctx.db
++      .query("userPreferences")
++      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
++      .unique();
++
++    if (preferences) {
++      await ctx.db.delete(preferences._id);
++    }
++
++    // Delete user
++    await ctx.db.delete(user._id);
++  },
++});
++
+-- 
+2.39.5
+
