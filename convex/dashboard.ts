@@ -14,7 +14,7 @@ export const getDashboardOverview = query({
     // Get development progress
     const projects = await ctx.db
       .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .collect();
 
     let totalTasks = 0;
@@ -44,7 +44,7 @@ export const getDashboardOverview = query({
     // Get marketing campaigns
     const campaigns = await ctx.db
       .query("campaigns")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .collect();
 
     const activeCampaigns = campaigns.filter(c => c.status === "active").length;
@@ -53,7 +53,7 @@ export const getDashboardOverview = query({
     // Get sales pipeline
     const customers = await ctx.db
       .query("customers")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .collect();
 
     const pipelineValue = customers
@@ -76,12 +76,12 @@ export const getDashboardOverview = query({
     // Get ideas and insights
     const ideas = await ctx.db
       .query("ideas")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .collect();
 
     const insights = await ctx.db
       .query("insights")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .filter((q) => q.eq(q.field("dismissed"), false))
       .collect();
 
@@ -122,8 +122,7 @@ export const getRecentActivity = query({
       v.literal("task"),
       v.literal("document"),
       v.literal("meeting"),
-      v.literal("code"),
-      v.literal("all")
+      v.literal("code")
     )),
   },
   handler: async (ctx, args) => {
@@ -131,10 +130,10 @@ export const getRecentActivity = query({
     
     let activitiesQuery = ctx.db
       .query("activities")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .order("desc");
 
-    if (args.type && args.type !== "all") {
+    if (args.type) {
       activitiesQuery = ctx.db
         .query("activities")
         .withIndex("by_type", (q) => q.eq("type", args.type))
@@ -417,4 +416,3 @@ export const getComponentMetrics = query({
     }
   },
 });
-

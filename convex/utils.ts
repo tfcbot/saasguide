@@ -306,7 +306,7 @@ export const businessUtils = {
   },
 
   // Generate sales pipeline stages
-  getDefaultSalesStages: () => Array<{
+  getDefaultSalesStages: (): Array<{
     name: string;
     order: number;
     color: string;
@@ -499,4 +499,3 @@ export const typeGuards = {
     return typeof value === 'string' && value.length > 0;
   },
 };
-
