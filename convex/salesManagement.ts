@@ -29,6 +29,20 @@ export const getSalesDashboard = query({
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .collect();
 
+    // Get recent general activities
+    const recentActivities = await ctx.db
+      .query("activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .filter((q) => 
+        q.or(
+          q.eq(q.field("entityType"), "customer"),
+          q.eq(q.field("entityType"), "deal"),
+          q.eq(q.field("entityType"), "sales_activity")
+        )
+      )
+      .order("desc")
+      .take(20);
+
     // Calculate customer statistics
     const customerStats = {
       total: customers.length,
@@ -45,6 +59,7 @@ export const getSalesDashboard = query({
       won: deals.filter(d => d.stage === "closed-won").length,
       wonValue: deals.filter(d => d.stage === "closed-won").reduce((sum, d) => sum + (d.value || 0), 0),
       lost: deals.filter(d => d.stage === "closed-lost").length,
+      lostValue: deals.filter(d => d.stage === "closed-lost").reduce((sum, d) => sum + (d.value || 0), 0),
       active: deals.filter(d => !["closed-won", "closed-lost"].includes(d.stage)).length,
       activeValue: deals
         .filter(d => !["closed-won", "closed-lost"].includes(d.stage))
@@ -52,33 +67,37 @@ export const getSalesDashboard = query({
     };
 
     // Calculate activity statistics
-    const now = Date.now();
-    const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
     const activityStats = {
       total: activities.length,
       completed: activities.filter(a => a.completed).length,
       pending: activities.filter(a => !a.completed).length,
       overdue: activities.filter(a => 
-        !a.completed && a.scheduledDate && a.scheduledDate < now
+        !a.completed && a.scheduledDate && a.scheduledDate < Date.now()
       ).length,
-      thisWeek: activities.filter(a => a.date >= weekAgo).length,
     };
 
     // Calculate conversion rates
-    const conversionRate = customerStats.total > 0 ? (customerStats.customers / customerStats.total) * 100 : 0;
-    const winRate = dealStats.total > 0 ? (dealStats.won / dealStats.total) * 100 : 0;
-    const avgDealSize = dealStats.total > 0 ? dealStats.totalValue / dealStats.total : 0;
+    const conversionRate = customerStats.leads > 0 
+      ? (customerStats.customers / customerStats.leads) * 100 
+      : 0;
+
+    const winRate = dealStats.total > 0 
+      ? (dealStats.won / dealStats.total) * 100 
+      : 0;
 
     return {
       user,
-      customerStats,
-      dealStats,
-      activityStats,
-      metrics: {
-        conversionRate,
-        winRate,
-        avgDealSize,
-      },
+      customers,
+      deals,
+      activities,
+      recentActivities,
+      stats: {
+        customers: customerStats,
+        deals: dealStats,
+        activities: activityStats,
+        conversionRate: Math.round(conversionRate * 100) / 100,
+        winRate: Math.round(winRate * 100) / 100,
+      }
     };
   },
 });
@@ -426,3 +445,220 @@ export const getSalesLeaderboard = query({
   },
 });
 
+// Enhanced get sales dashboard with access control
+export const getSalesDashboardEnhanced = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return null;
+    }
+
+    // Get all customers
+    const customers = await ctx.db
+      .query("customers")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Get all deals
+    const deals = await ctx.db
+      .query("deals")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Get all activities
+    const activities = await ctx.db
+      .query("salesActivities")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Get recent general activities
+    const recentActivities = await ctx.db
+      .query("activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .filter((q) => 
+        q.or(
+          q.eq(q.field("entityType"), "customer"),
+          q.eq(q.field("entityType"), "deal"),
+          q.eq(q.field("entityType"), "sales_activity")
+        )
+      )
+      .order("desc")
+      .take(20);
+
+    // Calculate customer statistics
+    const customerStats = {
+      total: customers.length,
+      leads: customers.filter(c => c.status === "lead").length,
+      prospects: customers.filter(c => c.status === "prospect").length,
+      customers: customers.filter(c => c.status === "customer").length,
+      churned: customers.filter(c => c.status === "churned").length,
+    };
+
+    // Calculate deal statistics
+    const dealStats = {
+      total: deals.length,
+      totalValue: deals.reduce((sum, deal) => sum + (deal.value || 0), 0),
+      won: deals.filter(d => d.stage === "closed-won").length,
+      wonValue: deals.filter(d => d.stage === "closed-won").reduce((sum, d) => sum + (d.value || 0), 0),
+      lost: deals.filter(d => d.stage === "closed-lost").length,
+      lostValue: deals.filter(d => d.stage === "closed-lost").reduce((sum, d) => sum + (d.value || 0), 0),
+      active: deals.filter(d => !["closed-won", "closed-lost"].includes(d.stage)).length,
+      activeValue: deals
+        .filter(d => !["closed-won", "closed-lost"].includes(d.stage))
+        .reduce((sum, d) => sum + (d.value || 0), 0),
+    };
+
+    // Calculate activity statistics
+    const activityStats = {
+      total: activities.length,
+      completed: activities.filter(a => a.completed).length,
+      pending: activities.filter(a => !a.completed).length,
+      overdue: activities.filter(a => 
+        !a.completed && a.scheduledDate && a.scheduledDate < Date.now()
+      ).length,
+    };
+
+    // Calculate conversion rates
+    const conversionRate = customerStats.leads > 0 
+      ? (customerStats.customers / customerStats.leads) * 100 
+      : 0;
+
+    const winRate = dealStats.total > 0 
+      ? (dealStats.won / dealStats.total) * 100 
+      : 0;
+
+    return {
+      user,
+      customers,
+      deals,
+      activities,
+      recentActivities,
+      stats: {
+        customers: customerStats,
+        deals: dealStats,
+        activities: activityStats,
+        conversionRate: Math.round(conversionRate * 100) / 100,
+        winRate: Math.round(winRate * 100) / 100,
+      }
+    };
+  },
+});
+
+// Enhanced get sales pipeline with access control
+export const getSalesPipelineEnhanced = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return null;
+    }
+
+    const deals = await ctx.db
+      .query("deals")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Group deals by stage
+    const stages = ["lead", "qualified", "proposal", "negotiation", "closed-won", "closed-lost"];
+    const pipeline: Record<string, { count: number; value: number; deals: any[] }> = {};
+
+    stages.forEach(stage => {
+      const stageDeals = deals.filter(d => d.stage === stage);
+      pipeline[stage] = {
+        count: stageDeals.length,
+        value: stageDeals.reduce((sum, deal) => sum + (deal.value || 0), 0),
+        deals: stageDeals,
+      };
+    });
+
+    // Calculate totals
+    const totalDeals = deals.length;
+    const totalValue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0);
+    const activeDeals = deals.filter(d => !["closed-won", "closed-lost"].includes(d.stage)).length;
+    const activeValue = deals
+      .filter(d => !["closed-won", "closed-lost"].includes(d.stage))
+      .reduce((sum, d) => sum + (d.value || 0), 0);
+
+    return {
+      pipeline,
+      totals: {
+        totalDeals,
+        totalValue,
+        activeDeals,
+        activeValue,
+        wonDeals: pipeline["closed-won"].count,
+        wonValue: pipeline["closed-won"].value,
+        lostDeals: pipeline["closed-lost"].count,
+        lostValue: pipeline["closed-lost"].value,
+      }
+    };
+  },
+});
+
+// Enhanced get customer journey with access control
+export const getCustomerJourneyEnhanced = query({
+  args: { 
+    customerId: v.id("customers"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return null;
+    }
+
+    // Verify customer access
+    const customer = await ctx.db.get(args.customerId);
+    if (!customer || customer.userId !== args.userId) {
+      return null;
+    }
+
+    // Get all deals for this customer
+    const deals = await ctx.db
+      .query("deals")
+      .withIndex("by_customer_id", (q) => q.eq("customerId", args.customerId))
+      .collect();
+
+    // Get all sales activities for this customer
+    const salesActivities = await ctx.db
+      .query("salesActivities")
+      .withIndex("by_customer_id", (q) => q.eq("customerId", args.customerId))
+      .order("desc")
+      .collect();
+
+    // Get general activities for this customer
+    const generalActivities = await ctx.db
+      .query("activities")
+      .withIndex("by_entity", (q) => 
+        q.eq("entityType", "customer").eq("entityId", args.customerId)
+      )
+      .order("desc")
+      .collect();
+
+    // Calculate customer metrics
+    const totalDealsValue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0);
+    const wonDeals = deals.filter(d => d.stage === "closed-won");
+    const wonValue = wonDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
+    const activitiesCompleted = salesActivities.filter(a => a.completed).length;
+
+    return {
+      customer,
+      deals,
+      salesActivities,
+      generalActivities,
+      metrics: {
+        totalDeals: deals.length,
+        totalDealsValue,
+        wonDeals: wonDeals.length,
+        wonValue,
+        activitiesTotal: salesActivities.length,
+        activitiesCompleted,
+        activitiesPending: salesActivities.length - activitiesCompleted,
+      }
+    };
+  },
+});

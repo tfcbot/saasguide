@@ -25,10 +25,81 @@ export const createCustomer = mutation({
   },
 });
 
+// Enhanced create customer with authentication and activity logging
+export const createCustomerEnhanced = mutation({
+  args: {
+    name: v.string(),
+    email: v.optional(v.string()),
+    company: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    website: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    size: v.optional(v.string()),
+    status: v.string(),
+    userId: v.id("users"),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    const now = Date.now();
+    const customerId = await ctx.db.insert("customers", {
+      name: args.name,
+      email: args.email,
+      company: args.company,
+      phone: args.phone,
+      website: args.website,
+      industry: args.industry,
+      size: args.size,
+      status: args.status,
+      userId: args.userId,
+      notes: args.notes,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "customer.created",
+      description: `Created customer "${args.name}"`,
+      userId: args.userId,
+      entityType: "customer",
+      entityId: customerId,
+      metadata: {
+        customerId,
+      },
+      createdAt: now,
+    });
+    
+    return customerId;
+  },
+});
+
 // Get all customers for a user
 export const getCustomersByUser = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
+    return await ctx.db
+      .query("customers")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+  },
+});
+
+// Enhanced get customers by user with access control
+export const getCustomersByUserEnhanced = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+    
     return await ctx.db
       .query("customers")
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
@@ -103,11 +174,141 @@ export const updateCustomer = mutation({
   },
 });
 
+// Enhanced update customer with activity logging and access control
+export const updateCustomerEnhanced = mutation({
+  args: {
+    customerId: v.id("customers"),
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    company: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    website: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    size: v.optional(v.string()),
+    status: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the customer and verify access
+    const customer = await ctx.db.get(args.customerId);
+    if (!customer) {
+      throw new Error("Customer not found");
+    }
+    
+    if (customer.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    const { customerId, userId, ...updates } = args;
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    
+    const result = await ctx.db.patch(customerId, {
+      ...filteredUpdates,
+      updatedAt: Date.now(),
+    });
+    
+    // Log activity based on what changed
+    let activityType = "customer.updated";
+    let description = `Updated customer "${customer.name}"`;
+    
+    if (args.status && args.status !== customer.status) {
+      activityType = "customer.status_changed";
+      description = `Changed customer "${customer.name}" status from ${customer.status} to ${args.status}`;
+    }
+    
+    await ctx.db.insert("activities", {
+      type: activityType,
+      description,
+      userId: args.userId,
+      entityType: "customer",
+      entityId: customerId,
+      metadata: {
+        customerId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
+  },
+});
+
 // Delete a customer
 export const deleteCustomer = mutation({
   args: { customerId: v.id("customers") },
   handler: async (ctx, args) => {
     return await ctx.db.delete(args.customerId);
+  },
+});
+
+// Enhanced delete customer with activity logging and access control
+export const deleteCustomerEnhanced = mutation({
+  args: { 
+    customerId: v.id("customers"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the customer and verify access
+    const customer = await ctx.db.get(args.customerId);
+    if (!customer) {
+      throw new Error("Customer not found");
+    }
+    
+    if (customer.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Delete all related deals first
+    const deals = await ctx.db
+      .query("deals")
+      .withIndex("by_customer_id", (q) => q.eq("customerId", args.customerId))
+      .collect();
+    
+    for (const deal of deals) {
+      await ctx.db.delete(deal._id);
+    }
+    
+    // Delete all related sales activities
+    const activities = await ctx.db
+      .query("salesActivities")
+      .withIndex("by_customer_id", (q) => q.eq("customerId", args.customerId))
+      .collect();
+    
+    for (const activity of activities) {
+      await ctx.db.delete(activity._id);
+    }
+    
+    // Delete the customer
+    const result = await ctx.db.delete(args.customerId);
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "customer.deleted",
+      description: `Deleted customer "${customer.name}"`,
+      userId: args.userId,
+      entityType: "customer",
+      entityId: args.customerId,
+      metadata: {
+        customerId: args.customerId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
   },
 });
 
@@ -192,4 +393,3 @@ export const getCustomerStats = query({
     };
   },
 });
-

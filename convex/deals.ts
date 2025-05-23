@@ -24,6 +24,65 @@ export const createDeal = mutation({
   },
 });
 
+// Enhanced create deal with authentication and activity logging
+export const createDealEnhanced = mutation({
+  args: {
+    title: v.string(),
+    description: v.optional(v.string()),
+    customerId: v.id("customers"),
+    userId: v.id("users"),
+    stage: v.string(),
+    value: v.optional(v.number()),
+    probability: v.optional(v.number()),
+    expectedCloseDate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify customer exists and user has access
+    const customer = await ctx.db.get(args.customerId);
+    if (!customer || customer.userId !== args.userId) {
+      throw new Error("Customer not found or access denied");
+    }
+    
+    const now = Date.now();
+    const dealId = await ctx.db.insert("deals", {
+      title: args.title,
+      description: args.description,
+      customerId: args.customerId,
+      userId: args.userId,
+      stage: args.stage,
+      value: args.value,
+      probability: args.probability,
+      expectedCloseDate: args.expectedCloseDate,
+      notes: args.notes,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "deal.created",
+      description: `Created deal "${args.title}" for customer "${customer.name}"`,
+      userId: args.userId,
+      entityType: "deal",
+      entityId: dealId,
+      metadata: {
+        dealId,
+        customerId: args.customerId,
+      },
+      createdAt: now,
+    });
+    
+    return dealId;
+  },
+});
+
 // Get all deals for a user
 export const getDealsByUser = query({
   args: { userId: v.id("users") },
@@ -96,11 +155,145 @@ export const updateDeal = mutation({
   },
 });
 
+// Enhanced update deal with activity logging and access control
+export const updateDealEnhanced = mutation({
+  args: {
+    dealId: v.id("deals"),
+    userId: v.id("users"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    stage: v.optional(v.string()),
+    value: v.optional(v.number()),
+    probability: v.optional(v.number()),
+    expectedCloseDate: v.optional(v.number()),
+    actualCloseDate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the deal and verify access
+    const deal = await ctx.db.get(args.dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    if (deal.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    const { dealId, userId, ...updates } = args;
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    
+    // Auto-set actualCloseDate if stage is closed
+    if (args.stage && ["closed-won", "closed-lost"].includes(args.stage) && !deal.actualCloseDate) {
+      filteredUpdates.actualCloseDate = Date.now();
+    }
+    
+    const result = await ctx.db.patch(dealId, {
+      ...filteredUpdates,
+      updatedAt: Date.now(),
+    });
+    
+    // Log activity based on what changed
+    let activityType = "deal.updated";
+    let description = `Updated deal "${deal.title}"`;
+    
+    if (args.stage && args.stage !== deal.stage) {
+      activityType = "deal.stage_changed";
+      description = `Moved deal "${deal.title}" from ${deal.stage} to ${args.stage}`;
+      
+      if (args.stage === "closed-won") {
+        activityType = "deal.won";
+        description = `Won deal "${deal.title}"`;
+      } else if (args.stage === "closed-lost") {
+        activityType = "deal.lost";
+        description = `Lost deal "${deal.title}"`;
+      }
+    }
+    
+    await ctx.db.insert("activities", {
+      type: activityType,
+      description,
+      userId: args.userId,
+      entityType: "deal",
+      entityId: dealId,
+      metadata: {
+        dealId,
+        customerId: deal.customerId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
+  },
+});
+
 // Delete a deal
 export const deleteDeal = mutation({
   args: { dealId: v.id("deals") },
   handler: async (ctx, args) => {
     return await ctx.db.delete(args.dealId);
+  },
+});
+
+// Enhanced delete deal with activity logging and access control
+export const deleteDealEnhanced = mutation({
+  args: { 
+    dealId: v.id("deals"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the deal and verify access
+    const deal = await ctx.db.get(args.dealId);
+    if (!deal) {
+      throw new Error("Deal not found");
+    }
+    
+    if (deal.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Delete all related sales activities first
+    const activities = await ctx.db
+      .query("salesActivities")
+      .withIndex("by_deal_id", (q) => q.eq("dealId", args.dealId))
+      .collect();
+    
+    for (const activity of activities) {
+      await ctx.db.delete(activity._id);
+    }
+    
+    // Delete the deal
+    const result = await ctx.db.delete(args.dealId);
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "deal.deleted",
+      description: `Deleted deal "${deal.title}"`,
+      userId: args.userId,
+      entityType: "deal",
+      entityId: args.dealId,
+      metadata: {
+        dealId: args.dealId,
+        customerId: deal.customerId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
   },
 });
 
@@ -259,4 +452,3 @@ export const getDealConversionFunnel = query({
     };
   },
 });
-

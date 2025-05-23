@@ -24,6 +24,73 @@ export const createSalesActivity = mutation({
   },
 });
 
+// Enhanced create sales activity with authentication and activity logging
+export const createSalesActivityEnhanced = mutation({
+  args: {
+    type: v.string(),
+    description: v.string(),
+    customerId: v.id("customers"),
+    dealId: v.optional(v.id("deals")),
+    userId: v.id("users"),
+    date: v.number(),
+    completed: v.boolean(),
+    outcome: v.optional(v.string()),
+    scheduledDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify customer exists and user has access
+    const customer = await ctx.db.get(args.customerId);
+    if (!customer || customer.userId !== args.userId) {
+      throw new Error("Customer not found or access denied");
+    }
+    
+    // Verify deal if provided
+    if (args.dealId) {
+      const deal = await ctx.db.get(args.dealId);
+      if (!deal || deal.userId !== args.userId || deal.customerId !== args.customerId) {
+        throw new Error("Deal not found or does not belong to customer");
+      }
+    }
+    
+    const now = Date.now();
+    const activityId = await ctx.db.insert("salesActivities", {
+      type: args.type,
+      description: args.description,
+      customerId: args.customerId,
+      dealId: args.dealId,
+      userId: args.userId,
+      date: args.date,
+      completed: args.completed,
+      outcome: args.outcome,
+      scheduledDate: args.scheduledDate,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "sales_activity.created",
+      description: `Created sales activity "${args.type}" for customer "${customer.name}"`,
+      userId: args.userId,
+      entityType: "sales_activity",
+      entityId: activityId,
+      metadata: {
+        customerId: args.customerId,
+        dealId: args.dealId,
+      },
+      createdAt: now,
+    });
+    
+    return activityId;
+  },
+});
+
 // Get all activities for a user
 export const getActivitiesByUser = query({
   args: { userId: v.id("users") },
@@ -299,4 +366,3 @@ export const createFollowUpActivity = mutation({
     });
   },
 });
-
