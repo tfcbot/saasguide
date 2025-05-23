@@ -222,4 +222,52 @@ export default defineSchema({
     .index("by_project_id", ["projectId"])
     .index("by_user_id", ["userId"])
     .index("by_status", ["status"]),
+
+  // Idea data model
+  ideas: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    userId: v.id("users"),
+    status: v.string(), // draft, evaluated, archived
+    totalScore: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("by_status", ["status"]),
+
+  // Idea criteria data model
+  ideaCriteria: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    userId: v.id("users"),
+    weight: v.number(), // 1-10
+    isDefault: v.boolean(),
+    order: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("default_criteria", ["isDefault"]),
+
+  // Idea score data model
+  ideaScores: defineTable({
+    ideaId: v.id("ideas"),
+    criteriaId: v.id("ideaCriteria"),
+    userId: v.id("users"),
+    score: v.number(), // 1-10
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_idea_id", ["ideaId"])
+    .index("by_criteria_id", ["criteriaId"])
+    .index("by_user_id", ["userId"]),
+
+  // Idea comparison data model
+  ideaComparisons: defineTable({
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    userId: v.id("users"),
+    ideaIds: v.array(v.id("ideas")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"]),
 });

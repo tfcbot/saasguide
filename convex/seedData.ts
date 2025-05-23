@@ -763,6 +763,162 @@ export const seedDatabase = mutation({
       updatedAt: Date.now(),
     });
 
+    // Create sample idea criteria
+    const criteria1Id = await ctx.db.insert("ideaCriteria", {
+      name: "Market Size",
+      description: "How large is the potential market for this idea?",
+      userId: user1Id,
+      weight: 8,
+      isDefault: false,
+      order: 1,
+      createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const criteria2Id = await ctx.db.insert("ideaCriteria", {
+      name: "Technical Feasibility",
+      description: "How technically feasible is this idea to implement?",
+      userId: user1Id,
+      weight: 7,
+      isDefault: false,
+      order: 2,
+      createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const criteria3Id = await ctx.db.insert("ideaCriteria", {
+      name: "Revenue Potential",
+      description: "What is the potential revenue opportunity?",
+      userId: user1Id,
+      weight: 9,
+      isDefault: false,
+      order: 3,
+      createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const criteria4Id = await ctx.db.insert("ideaCriteria", {
+      name: "Competitive Advantage",
+      description: "How unique is this idea compared to existing solutions?",
+      userId: user1Id,
+      weight: 6,
+      isDefault: false,
+      order: 4,
+      createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const criteria5Id = await ctx.db.insert("ideaCriteria", {
+      name: "Customer Demand",
+      description: "How strong is the customer demand for this solution?",
+      userId: user1Id,
+      weight: 8,
+      isDefault: false,
+      order: 5,
+      createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    // Create sample ideas
+    const idea1Id = await ctx.db.insert("ideas", {
+      name: "AI-Powered Project Assistant",
+      description: "An AI assistant that helps with project planning, task prioritization, and deadline management",
+      userId: user1Id,
+      status: "evaluated",
+      totalScore: 7.8,
+      createdAt: Date.now() - (25 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const idea2Id = await ctx.db.insert("ideas", {
+      name: "Real-time Collaboration Whiteboard",
+      description: "A collaborative whiteboard tool with real-time editing and video chat integration",
+      userId: user1Id,
+      status: "evaluated",
+      totalScore: 6.9,
+      createdAt: Date.now() - (20 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const idea3Id = await ctx.db.insert("ideas", {
+      name: "Smart Calendar Optimizer",
+      description: "AI-powered calendar that optimizes meeting scheduling and suggests optimal work blocks",
+      userId: user1Id,
+      status: "evaluated",
+      totalScore: 8.2,
+      createdAt: Date.now() - (15 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const idea4Id = await ctx.db.insert("ideas", {
+      name: "Voice-Controlled Task Manager",
+      description: "Task management app that works entirely through voice commands and natural language",
+      userId: user1Id,
+      status: "draft",
+      createdAt: Date.now() - (10 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const idea5Id = await ctx.db.insert("ideas", {
+      name: "Blockchain-Based File Storage",
+      description: "Decentralized file storage system using blockchain technology for enhanced security",
+      userId: user2Id,
+      status: "evaluated",
+      totalScore: 5.4,
+      createdAt: Date.now() - (12 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    // Create sample idea scores for evaluated ideas
+    const ideaScores = [
+      // AI-Powered Project Assistant scores
+      { ideaId: idea1Id, criteriaId: criteria1Id, userId: user1Id, score: 8, notes: "Large market for productivity tools" },
+      { ideaId: idea1Id, criteriaId: criteria2Id, userId: user1Id, score: 7, notes: "AI integration is complex but doable" },
+      { ideaId: idea1Id, criteriaId: criteria3Id, userId: user1Id, score: 8, notes: "High potential for subscription revenue" },
+      { ideaId: idea1Id, criteriaId: criteria4Id, userId: user1Id, score: 7, notes: "Some existing solutions but room for innovation" },
+      { ideaId: idea1Id, criteriaId: criteria5Id, userId: user1Id, score: 9, notes: "Strong demand from project managers" },
+
+      // Real-time Collaboration Whiteboard scores
+      { ideaId: idea2Id, criteriaId: criteria1Id, userId: user1Id, score: 7, notes: "Competitive market but growing" },
+      { ideaId: idea2Id, criteriaId: criteria2Id, userId: user1Id, score: 8, notes: "Well-established technologies available" },
+      { ideaId: idea2Id, criteriaId: criteria3Id, userId: user1Id, score: 6, notes: "Moderate revenue potential" },
+      { ideaId: idea2Id, criteriaId: criteria4Id, userId: user1Id, score: 5, notes: "Many existing competitors" },
+      { ideaId: idea2Id, criteriaId: criteria5Id, userId: user1Id, score: 8, notes: "High demand for remote collaboration" },
+
+      // Smart Calendar Optimizer scores
+      { ideaId: idea3Id, criteriaId: criteria1Id, userId: user1Id, score: 9, notes: "Huge market for calendar optimization" },
+      { ideaId: idea3Id, criteriaId: criteria2Id, userId: user1Id, score: 8, notes: "AI scheduling algorithms are proven" },
+      { ideaId: idea3Id, criteriaId: criteria3Id, userId: user1Id, score: 9, notes: "Premium pricing potential" },
+      { ideaId: idea3Id, criteriaId: criteria4Id, userId: user1Id, score: 8, notes: "Unique AI approach to calendar management" },
+      { ideaId: idea3Id, criteriaId: criteria5Id, userId: user1Id, score: 7, notes: "Growing awareness of time management importance" },
+
+      // Blockchain-Based File Storage scores (user2)
+      { ideaId: idea5Id, criteriaId: criteria1Id, userId: user2Id, score: 6, notes: "Niche market for blockchain storage" },
+      { ideaId: idea5Id, criteriaId: criteria2Id, userId: user2Id, score: 4, notes: "Complex blockchain implementation" },
+      { ideaId: idea5Id, criteriaId: criteria3Id, userId: user2Id, score: 5, notes: "Uncertain revenue model" },
+      { ideaId: idea5Id, criteriaId: criteria4Id, userId: user2Id, score: 7, notes: "Unique blockchain approach" },
+      { ideaId: idea5Id, criteriaId: criteria5Id, userId: user2Id, score: 5, notes: "Limited mainstream adoption" },
+    ];
+
+    // Insert idea scores
+    for (const score of ideaScores) {
+      await ctx.db.insert("ideaScores", {
+        ...score,
+        createdAt: Date.now() - (5 * 24 * 60 * 60 * 1000),
+        updatedAt: Date.now(),
+      });
+    }
+
+    // Create sample idea comparison
+    const comparisonId = await ctx.db.insert("ideaComparisons", {
+      name: "Top 3 AI-Powered Ideas",
+      description: "Comparison of our best AI-powered product ideas for Q2 planning",
+      userId: user1Id,
+      ideaIds: [idea3Id, idea1Id, idea2Id], // Ordered by score
+      createdAt: Date.now() - (3 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
     return {
       message: "Database seeded successfully",
       created: {
@@ -779,6 +935,10 @@ export const seedDatabase = mutation({
         roadmaps: 2,
         milestones: 4,
         features: 7,
+        ideaCriteria: 5,
+        ideas: 5,
+        ideaScores: ideaScores.length,
+        ideaComparisons: 1,
       },
     };
   },
