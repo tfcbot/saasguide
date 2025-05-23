@@ -76,3 +76,95 @@ export const myAction = action({
     });
   },
 });
+
+// New SaaS Guide demo functions
+export const getAppStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    // Check if we have any users (indicating the app is set up)
+    const users = await ctx.db.query("users").take(1);
+    const hasUsers = users.length > 0;
+    
+    if (!hasUsers) {
+      return {
+        status: "needs_setup",
+        message: "Database needs to be seeded with demo data",
+        setupRequired: true,
+      };
+    }
+    
+    // Get basic stats
+    const [userCount, customerCount, campaignCount, taskCount] = await Promise.all([
+      ctx.db.query("users").collect().then(users => users.length),
+      ctx.db.query("customers").collect().then(customers => customers.length),
+      ctx.db.query("campaigns").collect().then(campaigns => campaigns.length),
+      ctx.db.query("developmentTasks").collect().then(tasks => tasks.length),
+    ]);
+    
+    return {
+      status: "ready",
+      message: "SaaS Guide backend is ready",
+      setupRequired: false,
+      stats: {
+        users: userCount,
+        customers: customerCount,
+        campaigns: campaignCount,
+        tasks: taskCount,
+      },
+    };
+  },
+});
+
+export const getQuickStats = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      const [customers, campaigns, tasks, insights] = await Promise.all([
+        ctx.db.query("customers").collect(),
+        ctx.db.query("campaigns").collect(),
+        ctx.db.query("developmentTasks").collect(),
+        ctx.db.query("insights").collect(),
+      ]);
+      
+      // Calculate quick stats
+      const activeCustomers = customers.filter(c => 
+        ["lead", "opportunity", "proposal", "negotiation"].includes(c.status)
+      ).length;
+      
+      const activeCampaigns = campaigns.filter(c => c.status === "active").length;
+      
+      const completedTasks = tasks.filter(t => t.completed).length;
+      const taskProgress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+      
+      const unreadInsights = insights.filter(i => !i.isRead).length;
+      
+      return {
+        customers: {
+          total: customers.length,
+          active: activeCustomers,
+        },
+        campaigns: {
+          total: campaigns.length,
+          active: activeCampaigns,
+        },
+        development: {
+          totalTasks: tasks.length,
+          completedTasks,
+          progress: taskProgress,
+        },
+        insights: {
+          total: insights.length,
+          unread: unreadInsights,
+        },
+      };
+    } catch (error) {
+      // If tables don't exist yet, return empty stats
+      return {
+        customers: { total: 0, active: 0 },
+        campaigns: { total: 0, active: 0 },
+        development: { totalTasks: 0, completedTasks: 0, progress: 0 },
+        insights: { total: 0, unread: 0 },
+      };
+    }
+  },
+});

@@ -9,9 +9,18 @@ export default defineSchema({
     name: v.string(),
     avatarUrl: v.optional(v.string()),
     role: v.union(v.literal("admin"), v.literal("user")),
+    isActive: v.optional(v.boolean()),
+    lastLogin: v.optional(v.number()),
+    preferences: v.optional(v.object({
+      theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("system"))),
+      notifications: v.optional(v.boolean()),
+      timezone: v.optional(v.string()),
+    })),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_email", ["email"]),
+  }).index("by_email", ["email"])
+    .index("by_role", ["role"])
+    .index("by_active", ["isActive"]),
 
   // Sales and Customer Management
   customers: defineTable({
