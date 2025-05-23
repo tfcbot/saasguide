@@ -20,8 +20,9 @@ export const seedDatabase = mutation({
     });
 
     // Create sample projects
+    const project1Name = "SaaS Platform Development";
     const project1Id = await ctx.db.insert("projects", {
-      name: "SaaS Platform Development",
+      name: project1Name,
       description: "Building a comprehensive SaaS platform with user management, billing, and analytics",
       userId: user1Id,
       status: "in_progress",
@@ -32,8 +33,9 @@ export const seedDatabase = mutation({
       updatedAt: Date.now(),
     });
 
+    const project2Name = "Mobile App Development";
     const project2Id = await ctx.db.insert("projects", {
-      name: "Mobile App Development",
+      name: project2Name,
       description: "Cross-platform mobile application for iOS and Android",
       userId: user2Id,
       status: "planning",
@@ -187,7 +189,7 @@ export const seedDatabase = mutation({
       },
     ];
 
-    // Insert all tasks
+    // Insert tasks
     for (const task of tasks) {
       await ctx.db.insert("tasks", {
         ...task,
@@ -919,6 +921,235 @@ export const seedDatabase = mutation({
       updatedAt: Date.now(),
     });
 
+    // Create sample activities
+    const activities = [
+      {
+        type: "project.created",
+        description: `Created project "${project1Name}"`,
+        userId: user1Id,
+        entityType: "project",
+        entityId: project1Id,
+        metadata: { projectId: project1Id },
+        createdAt: Date.now() - (35 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "task.completed",
+        description: "Completed task \"Set up development environment\"",
+        userId: user1Id,
+        entityType: "task",
+        entityId: "task_1", // Using string ID since we don't have the actual task ID
+        metadata: { projectId: project1Id },
+        createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "campaign.launched",
+        description: "Launched campaign \"Q1 Product Launch\"",
+        userId: user1Id,
+        entityType: "campaign",
+        entityId: campaign1Id,
+        metadata: { campaignId: campaign1Id },
+        createdAt: Date.now() - (25 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "deal.won",
+        description: "Won deal \"Enterprise Software License\"",
+        userId: user1Id,
+        entityType: "deal",
+        entityId: deal1Id,
+        metadata: { dealId: deal1Id, customerId: customer1Id },
+        createdAt: Date.now() - (20 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "idea.evaluated",
+        description: "Evaluated idea \"Smart Calendar Optimizer\"",
+        userId: user1Id,
+        entityType: "idea",
+        entityId: idea3Id,
+        metadata: { ideaId: idea3Id },
+        createdAt: Date.now() - (15 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "milestone.completed",
+        description: "Completed milestone \"MVP Launch\"",
+        userId: user1Id,
+        entityType: "milestone",
+        entityId: milestone1Id,
+        metadata: { milestoneId: milestone1Id, roadmapId: roadmap1Id },
+        createdAt: Date.now() - (10 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "task.assigned",
+        description: "Assigned task \"Implement user authentication\"",
+        userId: user2Id,
+        entityType: "task",
+        entityId: "task_2", // Using string ID since we don't have the actual task ID
+        metadata: { projectId: project1Id },
+        createdAt: Date.now() - (8 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "customer.created",
+        description: "Added new customer \"TechCorp Solutions\"",
+        userId: user1Id,
+        entityType: "customer",
+        entityId: customer1Id,
+        metadata: { customerId: customer1Id },
+        createdAt: Date.now() - (5 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "project.updated",
+        description: `Updated project "${project2Name}" timeline`,
+        userId: user2Id,
+        entityType: "project",
+        entityId: project2Id,
+        metadata: { projectId: project2Id },
+        createdAt: Date.now() - (3 * 24 * 60 * 60 * 1000),
+      },
+      {
+        type: "campaign.completed",
+        description: "Completed campaign \"Summer Sale Promotion\"",
+        userId: user1Id,
+        entityType: "campaign",
+        entityId: campaign2Id,
+        metadata: { campaignId: campaign2Id },
+        createdAt: Date.now() - (1 * 24 * 60 * 60 * 1000),
+      },
+    ];
+
+    // Insert activities
+    const activityIds = [];
+    for (const activity of activities) {
+      const activityId = await ctx.db.insert("activities", activity);
+      activityIds.push(activityId);
+    }
+
+    // Create sample notifications
+    const notifications = [
+      {
+        title: "Project Created",
+        message: `Project "${project1Name}" has been created successfully.`,
+        userId: user1Id,
+        type: "success",
+        read: true,
+        activityId: activityIds[0],
+        entityType: "project",
+        entityId: project1Id,
+        metadata: { projectId: project1Id },
+        createdAt: Date.now() - (35 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "Task Completed",
+        message: "Task \"Set up development environment\" has been completed.",
+        userId: user1Id,
+        type: "success",
+        read: true,
+        activityId: activityIds[1],
+        entityType: "task",
+        entityId: "task_1", // Using string ID since we don't have the actual task ID
+        metadata: { projectId: project1Id },
+        createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "Campaign Launched",
+        message: "Campaign \"Q1 Product Launch\" has been launched successfully.",
+        userId: user1Id,
+        type: "info",
+        read: true,
+        activityId: activityIds[2],
+        entityType: "campaign",
+        entityId: campaign1Id,
+        metadata: { campaignId: campaign1Id },
+        createdAt: Date.now() - (25 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "Deal Won!",
+        message: "Congratulations! Deal \"Enterprise Software License\" worth $50,000 has been won.",
+        userId: user1Id,
+        type: "success",
+        read: false,
+        activityId: activityIds[3],
+        entityType: "deal",
+        entityId: deal1Id,
+        metadata: { dealId: deal1Id, customerId: customer1Id },
+        createdAt: Date.now() - (20 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "Idea Evaluated",
+        message: "Idea \"Smart Calendar Optimizer\" has been evaluated with a score of 8.2.",
+        userId: user1Id,
+        type: "info",
+        read: false,
+        activityId: activityIds[4],
+        entityType: "idea",
+        entityId: idea3Id,
+        metadata: { ideaId: idea3Id },
+        createdAt: Date.now() - (15 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "Milestone Completed",
+        message: "Milestone \"MVP Launch\" has been completed successfully.",
+        userId: user1Id,
+        type: "success",
+        read: false,
+        activityId: activityIds[5],
+        entityType: "milestone",
+        entityId: milestone1Id,
+        metadata: { milestoneId: milestone1Id, roadmapId: roadmap1Id },
+        createdAt: Date.now() - (10 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "Task Assigned",
+        message: "You have been assigned task \"Implement user authentication\".",
+        userId: user2Id,
+        type: "info",
+        read: false,
+        activityId: activityIds[6],
+        entityType: "task",
+        entityId: "task_2", // Using string ID since we don't have the actual task ID
+        metadata: { projectId: project1Id },
+        createdAt: Date.now() - (8 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "New Customer Added",
+        message: "New customer \"TechCorp Solutions\" has been added to the system.",
+        userId: user1Id,
+        type: "info",
+        read: false,
+        activityId: activityIds[7],
+        entityType: "customer",
+        entityId: customer1Id,
+        metadata: { customerId: customer1Id },
+        createdAt: Date.now() - (5 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "Project Deadline Approaching",
+        message: `Project "${project2Name}" deadline is approaching in 3 days.`,
+        userId: user2Id,
+        type: "warning",
+        read: false,
+        entityType: "project",
+        entityId: project2Id,
+        metadata: { projectId: project2Id },
+        createdAt: Date.now() - (2 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: "Campaign Performance Update",
+        message: "Campaign \"Summer Sale Promotion\" has achieved 150% of target conversions.",
+        userId: user1Id,
+        type: "success",
+        read: false,
+        activityId: activityIds[9],
+        entityType: "campaign",
+        entityId: campaign2Id,
+        metadata: { campaignId: campaign2Id },
+        createdAt: Date.now() - (6 * 60 * 60 * 1000), // 6 hours ago
+      },
+    ];
+
+    // Insert notifications
+    for (const notification of notifications) {
+      await ctx.db.insert("notifications", notification);
+    }
+
     return {
       message: "Database seeded successfully",
       created: {
@@ -939,6 +1170,8 @@ export const seedDatabase = mutation({
         ideas: 5,
         ideaScores: ideaScores.length,
         ideaComparisons: 1,
+        activities: activities.length,
+        notifications: notifications.length,
       },
     };
   },

@@ -270,4 +270,51 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user_id", ["userId"]),
+
+  // Activity data model
+  activities: defineTable({
+    type: v.string(), // project.created, task.completed, campaign.launched, etc.
+    description: v.string(),
+    userId: v.id("users"),
+    entityType: v.string(), // project, task, campaign, deal, etc.
+    entityId: v.string(), // ID of the related entity
+    metadata: v.optional(v.object({
+      projectId: v.optional(v.id("projects")),
+      taskId: v.optional(v.id("tasks")),
+      campaignId: v.optional(v.id("marketingCampaigns")),
+      dealId: v.optional(v.id("deals")),
+      customerId: v.optional(v.id("customers")),
+      roadmapId: v.optional(v.id("roadmaps")),
+      milestoneId: v.optional(v.id("milestones")),
+      ideaId: v.optional(v.id("ideas")),
+    })),
+    createdAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("by_entity", ["entityType", "entityId"])
+    .index("recent_activities", ["createdAt"]),
+
+  // Notification data model
+  notifications: defineTable({
+    title: v.string(),
+    message: v.string(),
+    userId: v.id("users"),
+    type: v.string(), // info, success, warning, error
+    read: v.boolean(),
+    activityId: v.optional(v.id("activities")),
+    entityType: v.optional(v.string()), // project, task, campaign, deal, etc.
+    entityId: v.optional(v.string()), // ID of the related entity
+    metadata: v.optional(v.object({
+      projectId: v.optional(v.id("projects")),
+      taskId: v.optional(v.id("tasks")),
+      campaignId: v.optional(v.id("marketingCampaigns")),
+      dealId: v.optional(v.id("deals")),
+      customerId: v.optional(v.id("customers")),
+      roadmapId: v.optional(v.id("roadmaps")),
+      milestoneId: v.optional(v.id("milestones")),
+      ideaId: v.optional(v.id("ideas")),
+    })),
+    createdAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("unread_notifications", ["userId", "read"])
+    .index("recent_notifications", ["createdAt"]),
 });
