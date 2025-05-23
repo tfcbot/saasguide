@@ -1,6 +1,254 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
+// Enhanced create idea comparison with authentication and activity logging
+export const createIdeaComparisonEnhanced = mutation({
+  args: {
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    userId: v.id("users"),
+    ideaIds: v.array(v.id("ideas")),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify ideas exist and user has access
+    for (const ideaId of args.ideaIds) {
+      const idea = await ctx.db.get(ideaId);
+      if (!idea || idea.userId !== args.userId) {
+        throw new Error(`Idea ${ideaId} not found or access denied`);
+      }
+    }
+    
+    const now = Date.now();
+    const comparisonId = await ctx.db.insert("ideaComparisons", {
+      name: args.name || `Comparison ${new Date().toLocaleDateString()}`,
+      description: args.description,
+      userId: args.userId,
+      ideaIds: args.ideaIds,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "comparison.created",
+      description: `Created comparison "${args.name || 'Untitled'}" with ${args.ideaIds.length} ideas`,
+      userId: args.userId,
+      entityType: "comparison",
+      entityId: comparisonId,
+      metadata: {
+        // Use ideaId for the first idea in the comparison
+        ideaId: args.ideaIds[0],
+      },
+      createdAt: now,
+    });
+    
+    return comparisonId;
+  },
+});
+
+// Enhanced get comparison with details and access control
+export const getComparisonWithDetailsEnhanced = query({
+  args: { 
+    comparisonId: v.id("ideaComparisons"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return null;
+    }
+    
+    // Get the comparison and verify access
+    const comparison = await ctx.db.get(args.comparisonId);
+    if (!comparison || comparison.userId !== args.userId) {
+      return null;
+    }
+    
+    // Get all ideas in the comparison
+    const ideas = await Promise.all(
+      comparison.ideaIds.map(async (ideaId) => {
+        const idea = await ctx.db.get(ideaId);
+        if (!idea) return null;
+        
+        // Get scores for this idea
+        const scores = await ctx.db
+          .query("ideaScores")
+          .withIndex("by_idea_id", (q) => q.eq("ideaId", ideaId))
+          .collect();
+        
+        return {
+          ...idea,
+          scores,
+        };
+      })
+    );
+    
+    // Filter out null ideas (deleted ideas)
+    const validIdeas = ideas.filter(Boolean);
+    
+    // Get all criteria for this user
+    const criteria = await ctx.db
+      .query("ideaCriteria")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    return {
+      comparison,
+      ideas: validIdeas,
+      criteria,
+    };
+  },
+});
+
+// Enhanced update idea comparison with activity logging and access control
+export const updateIdeaComparisonEnhanced = mutation({
+  args: {
+    comparisonId: v.id("ideaComparisons"),
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    ideaIds: v.optional(v.array(v.id("ideas"))),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the comparison and verify access
+    const comparison = await ctx.db.get(args.comparisonId);
+    if (!comparison) {
+      throw new Error("Comparison not found");
+    }
+    
+    if (comparison.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Verify ideas if provided
+    if (args.ideaIds) {
+      for (const ideaId of args.ideaIds) {
+        const idea = await ctx.db.get(ideaId);
+        if (!idea || idea.userId !== args.userId) {
+          throw new Error(`Idea ${ideaId} not found or access denied`);
+        }
+      }
+    }
+    
+    const { comparisonId, userId, ...updates } = args;
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    
+    const result = await ctx.db.patch(comparisonId, {
+      ...filteredUpdates,
+      updatedAt: Date.now(),
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "comparison.updated",
+      description: `Updated comparison "${comparison.name}"`,
+      userId: args.userId,
+      entityType: "comparison",
+      entityId: comparisonId,
+      metadata: {
+        ideaId: comparison.ideaIds[0],
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
+  },
+});
+
+// Enhanced delete idea comparison with activity logging and access control
+export const deleteIdeaComparisonEnhanced = mutation({
+  args: { 
+    comparisonId: v.id("ideaComparisons"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the comparison and verify access
+    const comparison = await ctx.db.get(args.comparisonId);
+    if (!comparison) {
+      throw new Error("Comparison not found");
+    }
+    
+    if (comparison.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Delete the comparison
+    const result = await ctx.db.delete(args.comparisonId);
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "comparison.deleted",
+      description: `Deleted comparison "${comparison.name}"`,
+      userId: args.userId,
+      entityType: "comparison",
+      entityId: args.comparisonId,
+      metadata: {
+        ideaId: comparison.ideaIds[0],
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
+  },
+});
+
+// Enhanced get comparisons by user with access control
+export const getComparisonsByUserEnhanced = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+    
+    const comparisons = await ctx.db
+      .query("ideaComparisons")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .collect();
+    
+    // Fetch idea details for each comparison
+    const comparisonsWithIdeas = await Promise.all(
+      comparisons.map(async (comparison) => {
+        const ideas = await Promise.all(
+          comparison.ideaIds.map(async (ideaId) => {
+            return await ctx.db.get(ideaId);
+          })
+        );
+        
+        return {
+          ...comparison,
+          ideas: ideas.filter(Boolean), // Filter out null ideas (deleted ideas)
+        };
+      })
+    );
+    
+    return comparisonsWithIdeas;
+  },
+});
+
 // Create a new idea comparison
 export const createIdeaComparison = mutation({
   args: {
@@ -371,4 +619,3 @@ export const createQuickComparison = mutation({
     });
   },
 });
-
