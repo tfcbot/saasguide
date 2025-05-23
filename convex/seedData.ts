@@ -178,7 +178,7 @@ export const seedDatabase = mutation({
         title: "Set up CI/CD pipeline",
         description: "Configure continuous integration and deployment",
         projectId: project1Id,
-        phaseId: null,
+        phaseId: undefined, // Changed from null to undefined
         userId: user1Id,
         assigneeId: user1Id,
         status: "todo",
@@ -207,4 +207,3 @@ export const seedDatabase = mutation({
     };
   },
 });
-
