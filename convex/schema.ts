@@ -319,4 +319,19 @@ export default defineSchema({
   }).index("by_user_id", ["userId"])
     .index("unread_notifications", ["userId", "read"])
     .index("recent_notifications", ["createdAt"]),
+
+  // Error logging table
+  errorLogs: defineTable({
+    name: v.string(),
+    message: v.string(),
+    stack: v.optional(v.string()),
+    type: v.string(), // ErrorType enum value
+    code: v.string(), // ErrorCode enum value
+    details: v.optional(v.any()),
+    additionalInfo: v.optional(v.any()),
+    timestamp: v.number(),
+    userId: v.optional(v.id("users")),
+    functionName: v.optional(v.string()),
+    resolved: v.optional(v.boolean()),
+  }),
 });
