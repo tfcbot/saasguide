@@ -23,15 +23,31 @@ export const createNotification = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("notifications", {
-      ...args,
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Create notification
+    const notificationId = await ctx.db.insert("notifications", {
+      title: args.title,
+      message: args.message,
+      userId: args.userId,
+      type: args.type,
       read: false,
+      activityId: args.activityId,
+      entityType: args.entityType,
+      entityId: args.entityId,
+      metadata: args.metadata,
       createdAt: Date.now(),
     });
+    
+    return notificationId;
   },
 });
 
-// Get all notifications for a user
+// Get all notifications for a user (backward compatibility)
 export const getNotificationsByUser = query({
   args: { 
     userId: v.id("users"),
@@ -45,6 +61,44 @@ export const getNotificationsByUser = query({
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(limit);
+  },
+});
+
+// Enhanced get notifications function with user authentication
+export const getNotifications = query({
+  args: {
+    userId: v.id("users"),
+    unreadOnly: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+    
+    const limit = args.limit || 20;
+    
+    let notificationsQuery;
+    
+    if (args.unreadOnly) {
+      notificationsQuery = ctx.db
+        .query("notifications")
+        .withIndex("unread_notifications", (q) => 
+          q.eq("userId", args.userId).eq("read", false)
+        );
+    } else {
+      notificationsQuery = ctx.db
+        .query("notifications")
+        .withIndex("by_user_id", (q) => q.eq("userId", args.userId));
+    }
+    
+    const notifications = await notificationsQuery
+      .order("desc")
+      .take(limit);
+    
+    return notifications;
   },
 });
 
@@ -91,11 +145,29 @@ export const getNotificationsByType = query({
 
 // Mark notification as read
 export const markNotificationAsRead = mutation({
-  args: { notificationId: v.id("notifications") },
+  args: {
+    notificationId: v.id("notifications"),
+    userId: v.id("users"),
+  },
   handler: async (ctx, args) => {
-    return await ctx.db.patch(args.notificationId, {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify notification exists and user has access
+    const notification = await ctx.db.get(args.notificationId);
+    if (!notification || notification.userId !== args.userId) {
+      throw new Error("Notification not found or access denied");
+    }
+    
+    // Mark notification as read
+    await ctx.db.patch(args.notificationId, {
       read: true,
     });
+    
+    return args.notificationId;
   },
 });
 
@@ -113,23 +185,28 @@ export const markNotificationAsUnread = mutation({
 export const markAllNotificationsAsRead = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get all unread notifications
     const unreadNotifications = await ctx.db
       .query("notifications")
       .withIndex("unread_notifications", (q) => 
         q.eq("userId", args.userId).eq("read", false)
       )
       .collect();
-
-    const updatedIds = [];
+    
+    // Mark all as read
     for (const notification of unreadNotifications) {
-      await ctx.db.patch(notification._id, { read: true });
-      updatedIds.push(notification._id);
+      await ctx.db.patch(notification._id, {
+        read: true,
+      });
     }
-
-    return {
-      updatedCount: updatedIds.length,
-      updatedIds,
-    };
+    
+    return unreadNotifications.length;
   },
 });
 
