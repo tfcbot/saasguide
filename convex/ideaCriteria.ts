@@ -267,3 +267,183 @@ export const getCriteriaStats = query({
   },
 });
 
+// Enhanced create idea criteria with authentication and activity logging
+export const createIdeaCriteriaEnhanced = mutation({
+  args: {
+    name: v.string(),
+    description: v.optional(v.string()),
+    userId: v.id("users"),
+    weight: v.number(),
+    isDefault: v.boolean(),
+    order: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Validate weight (1-10)
+    if (args.weight < 1 || args.weight > 10) {
+      throw new Error("Weight must be between 1 and 10");
+    }
+    
+    const now = Date.now();
+    const criteriaId = await ctx.db.insert("ideaCriteria", {
+      name: args.name,
+      description: args.description,
+      userId: args.userId,
+      weight: args.weight,
+      isDefault: args.isDefault,
+      order: args.order,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "criteria.created",
+      description: `Created criteria "${args.name}" with weight ${args.weight}`,
+      userId: args.userId,
+      entityType: "criteria",
+      entityId: criteriaId,
+      metadata: {
+        // No specific metadata fields for criteria in schema
+      },
+      createdAt: now,
+    });
+    
+    return criteriaId;
+  },
+});
+
+// Enhanced update idea criteria with activity logging and access control
+export const updateIdeaCriteriaEnhanced = mutation({
+  args: {
+    criteriaId: v.id("ideaCriteria"),
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    weight: v.optional(v.number()),
+    order: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the criteria and verify access
+    const criteria = await ctx.db.get(args.criteriaId);
+    if (!criteria) {
+      throw new Error("Criteria not found");
+    }
+    
+    if (criteria.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Validate weight if provided
+    if (args.weight !== undefined && (args.weight < 1 || args.weight > 10)) {
+      throw new Error("Weight must be between 1 and 10");
+    }
+    
+    const { criteriaId, userId, ...updates } = args;
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    
+    const result = await ctx.db.patch(criteriaId, {
+      ...filteredUpdates,
+      updatedAt: Date.now(),
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "criteria.updated",
+      description: `Updated criteria "${criteria.name}"`,
+      userId: args.userId,
+      entityType: "criteria",
+      entityId: criteriaId,
+      metadata: {
+        // No specific metadata fields for criteria in schema
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
+  },
+});
+
+// Enhanced delete idea criteria with activity logging and access control
+export const deleteIdeaCriteriaEnhanced = mutation({
+  args: { 
+    criteriaId: v.id("ideaCriteria"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the criteria and verify access
+    const criteria = await ctx.db.get(args.criteriaId);
+    if (!criteria) {
+      throw new Error("Criteria not found");
+    }
+    
+    if (criteria.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Delete all scores for this criteria
+    const scores = await ctx.db
+      .query("ideaScores")
+      .withIndex("by_criteria_id", (q) => q.eq("criteriaId", args.criteriaId))
+      .collect();
+    
+    for (const score of scores) {
+      await ctx.db.delete(score._id);
+    }
+    
+    // Delete the criteria
+    const result = await ctx.db.delete(args.criteriaId);
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "criteria.deleted",
+      description: `Deleted criteria "${criteria.name}"`,
+      userId: args.userId,
+      entityType: "criteria",
+      entityId: args.criteriaId,
+      metadata: {
+        // No specific metadata fields for criteria in schema
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
+  },
+});
+
+// Enhanced get criteria by user with access control
+export const getCriteriaByUserEnhanced = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+    
+    return await ctx.db
+      .query("ideaCriteria")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .order("asc")
+      .collect();
+  },
+});
