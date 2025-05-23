@@ -10,47 +10,99 @@ async function getUserByClerkId(ctx: any, clerkId: string) {
     .first();
 }
 
-// Create a new activity
-export const createActivity = mutation({
+// Enhanced get recent activities function with user authentication
+export const getRecentActivities = query({
   args: {
-    type: v.string(),
-    description: v.string(),
     userId: v.id("users"),
-    entityType: v.string(),
-    entityId: v.string(),
-    metadata: v.optional(v.object({
-      projectId: v.optional(v.id("projects")),
-      taskId: v.optional(v.id("tasks")),
-      campaignId: v.optional(v.id("marketingCampaigns")),
-      dealId: v.optional(v.id("deals")),
-      customerId: v.optional(v.id("customers")),
-      roadmapId: v.optional(v.id("roadmaps")),
-      milestoneId: v.optional(v.id("milestones")),
-      ideaId: v.optional(v.id("ideas")),
-    })),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("activities", {
-      ...args,
-      createdAt: Date.now(),
-    });
-  },
-});
-
-// Get all activities for a user
-export const getActivitiesByUser = query({
-  args: { 
-    userId: v.id("users"),
-    limit: v.optional(v.number())
-  },
-  handler: async (ctx, args) => {
-    const limit = args.limit || 50;
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
     
-    return await ctx.db
+    const limit = args.limit || 10;
+    
+    const activities = await ctx.db
       .query("activities")
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(limit);
+    
+    return activities;
+  },
+});
+
+// Enhanced get entity activities function with user authentication
+export const getEntityActivities = query({
+  args: {
+    userId: v.id("users"),
+    entityType: v.string(),
+    entityId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+    
+    const limit = args.limit || 10;
+    
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_entity", (q) => 
+        q.eq("entityType", args.entityType).eq("entityId", args.entityId)
+      )
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .order("desc")
+      .take(limit);
+    
+    return activities;
+  },
+});
+
+// Enhanced get dashboard activity feed function
+export const getDashboardActivityFeed = query({
+  args: {
+    userId: v.id("users"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return {
+        activities: [],
+        notifications: [],
+      };
+    }
+    
+    const limit = args.limit || 10;
+    
+    // Get recent activities
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .take(limit);
+    
+    // Get unread notifications
+    const notifications = await ctx.db
+      .query("notifications")
+      .withIndex("unread_notifications", (q) => 
+        q.eq("userId", args.userId).eq("read", false)
+      )
+      .order("desc")
+      .take(limit);
+    
+    return {
+      activities,
+      notifications,
+    };
   },
 });
 
@@ -115,8 +167,8 @@ export const getEntityActivitiesAuth = query({
   },
 });
 
-// Get dashboard activity feed function
-export const getDashboardActivityFeed = query({
+// Get dashboard activity feed function (auth-enabled version)
+export const getDashboardActivityFeedAuth = query({
   args: {
     limit: v.optional(v.number()),
   },
@@ -162,15 +214,45 @@ export const getDashboardActivityFeed = query({
   },
 });
 
-// Get recent activities across all users (for admin dashboard)
-export const getRecentActivities = query({
-  args: { limit: v.optional(v.number()) },
+// Create a new activity
+export const createActivity = mutation({
+  args: {
+    type: v.string(),
+    description: v.string(),
+    userId: v.id("users"),
+    entityType: v.string(),
+    entityId: v.string(),
+    metadata: v.optional(v.object({
+      projectId: v.optional(v.id("projects")),
+      taskId: v.optional(v.id("tasks")),
+      campaignId: v.optional(v.id("marketingCampaigns")),
+      dealId: v.optional(v.id("deals")),
+      customerId: v.optional(v.id("customers")),
+      roadmapId: v.optional(v.id("roadmaps")),
+      milestoneId: v.optional(v.id("milestones")),
+      ideaId: v.optional(v.id("ideas")),
+    })),
+  },
   handler: async (ctx, args) => {
-    const limit = args.limit || 20;
+    return await ctx.db.insert("activities", {
+      ...args,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// Get all activities for a user
+export const getActivitiesByUser = query({
+  args: { 
+    userId: v.id("users"),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 50;
     
     return await ctx.db
       .query("activities")
-      .withIndex("recent_activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(limit);
   },
@@ -218,136 +300,17 @@ export const getActivitiesByType = query({
   },
 });
 
-// Get activity feed with enriched data
-export const getActivityFeed = query({
-  args: { 
-    userId: v.id("users"),
-    limit: v.optional(v.number())
-  },
+// Delete activity
+export const deleteActivity = mutation({
+  args: { activityId: v.id("activities") },
   handler: async (ctx, args) => {
-    const limit = args.limit || 20;
-    
-    const activities = await ctx.db
-      .query("activities")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
-      .order("desc")
-      .take(limit);
-
-    // Enrich activities with related entity data
-    const enrichedActivities = [];
-    
-    for (const activity of activities) {
-      let entityData = null;
-      
-      // Fetch related entity data based on type
-      if (activity.metadata) {
-        if (activity.metadata.projectId) {
-          entityData = await ctx.db.get(activity.metadata.projectId);
-        } else if (activity.metadata.taskId) {
-          entityData = await ctx.db.get(activity.metadata.taskId);
-        } else if (activity.metadata.campaignId) {
-          entityData = await ctx.db.get(activity.metadata.campaignId);
-        } else if (activity.metadata.dealId) {
-          entityData = await ctx.db.get(activity.metadata.dealId);
-        } else if (activity.metadata.customerId) {
-          entityData = await ctx.db.get(activity.metadata.customerId);
-        } else if (activity.metadata.roadmapId) {
-          entityData = await ctx.db.get(activity.metadata.roadmapId);
-        } else if (activity.metadata.milestoneId) {
-          entityData = await ctx.db.get(activity.metadata.milestoneId);
-        } else if (activity.metadata.ideaId) {
-          entityData = await ctx.db.get(activity.metadata.ideaId);
-        }
-      }
-      
-      enrichedActivities.push({
-        ...activity,
-        entityData,
-      });
-    }
-    
-    return enrichedActivities;
+    return await ctx.db.delete(args.activityId);
   },
 });
 
-// Get activity statistics
-export const getActivityStats = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const activities = await ctx.db
-      .query("activities")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
-      .collect();
+// Activity creation helpers for specific entities
 
-    const now = Date.now();
-    const oneDayAgo = now - (24 * 60 * 60 * 1000);
-    const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = now - (30 * 24 * 60 * 60 * 1000);
-
-    const stats = {
-      total: activities.length,
-      today: activities.filter(a => a.createdAt >= oneDayAgo).length,
-      thisWeek: activities.filter(a => a.createdAt >= oneWeekAgo).length,
-      thisMonth: activities.filter(a => a.createdAt >= oneMonthAgo).length,
-    };
-
-    // Activity type breakdown
-    const typeBreakdown: Record<string, number> = {};
-    activities.forEach(activity => {
-      typeBreakdown[activity.type] = (typeBreakdown[activity.type] || 0) + 1;
-    });
-
-    // Entity type breakdown
-    const entityBreakdown: Record<string, number> = {};
-    activities.forEach(activity => {
-      entityBreakdown[activity.entityType] = (entityBreakdown[activity.entityType] || 0) + 1;
-    });
-
-    return {
-      ...stats,
-      typeBreakdown,
-      entityBreakdown,
-    };
-  },
-});
-
-// Delete old activities (cleanup function)
-export const deleteOldActivities = mutation({
-  args: { 
-    olderThanDays: v.number(),
-    userId: v.optional(v.id("users"))
-  },
-  handler: async (ctx, args) => {
-    const cutoffDate = Date.now() - (args.olderThanDays * 24 * 60 * 60 * 1000);
-    
-    let activities;
-    if (args.userId) {
-      activities = await ctx.db
-        .query("activities")
-        .withIndex("by_user_id", (q) => q.eq("userId", args.userId!))
-        .collect();
-    } else {
-      activities = await ctx.db
-        .query("activities")
-        .collect();
-    }
-    
-    const oldActivities = activities.filter(a => a.createdAt < cutoffDate);
-    
-    const deletedIds = [];
-    for (const activity of oldActivities) {
-      await ctx.db.delete(activity._id);
-      deletedIds.push(activity._id);
-    }
-    
-    return {
-      deletedCount: deletedIds.length,
-      deletedIds,
-    };
-  },
-});
-
-// Helper function to create common activity types
+// Create project activity
 export const createProjectActivity = mutation({
   args: {
     projectId: v.id("projects"),
@@ -356,6 +319,7 @@ export const createProjectActivity = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get project details for context
     const project = await ctx.db.get(args.projectId);
     if (!project) {
       throw new Error("Project not found");
@@ -378,6 +342,7 @@ export const createProjectActivity = mutation({
   },
 });
 
+// Create task activity
 export const createTaskActivity = mutation({
   args: {
     taskId: v.id("tasks"),
@@ -386,6 +351,7 @@ export const createTaskActivity = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get task details for context
     const task = await ctx.db.get(args.taskId);
     if (!task) {
       throw new Error("Task not found");
@@ -409,6 +375,7 @@ export const createTaskActivity = mutation({
   },
 });
 
+// Create campaign activity
 export const createCampaignActivity = mutation({
   args: {
     campaignId: v.id("marketingCampaigns"),
@@ -417,6 +384,7 @@ export const createCampaignActivity = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get campaign details for context
     const campaign = await ctx.db.get(args.campaignId);
     if (!campaign) {
       throw new Error("Campaign not found");
@@ -439,14 +407,16 @@ export const createCampaignActivity = mutation({
   },
 });
 
+// Create deal activity
 export const createDealActivity = mutation({
   args: {
     dealId: v.id("deals"),
     userId: v.id("users"),
-    action: v.string(), // created, updated, won, lost, moved
+    action: v.string(), // created, updated, stage_changed, won, lost
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get deal details for context
     const deal = await ctx.db.get(args.dealId);
     if (!deal) {
       throw new Error("Deal not found");
@@ -470,14 +440,115 @@ export const createDealActivity = mutation({
   },
 });
 
+// Create customer activity
+export const createCustomerActivity = mutation({
+  args: {
+    customerId: v.id("customers"),
+    userId: v.id("users"),
+    action: v.string(), // created, updated, contacted, converted
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Get customer details for context
+    const customer = await ctx.db.get(args.customerId);
+    if (!customer) {
+      throw new Error("Customer not found");
+    }
+
+    const description = args.description || 
+      `${args.action.charAt(0).toUpperCase() + args.action.slice(1)} customer "${customer.name}"`;
+
+    return await ctx.db.insert("activities", {
+      type: `customer.${args.action}`,
+      description,
+      userId: args.userId,
+      entityType: "customer",
+      entityId: args.customerId,
+      metadata: {
+        customerId: args.customerId,
+      },
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// Create roadmap activity
+export const createRoadmapActivity = mutation({
+  args: {
+    roadmapId: v.id("roadmaps"),
+    userId: v.id("users"),
+    action: v.string(), // created, updated, milestone_added
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Get roadmap details for context
+    const roadmap = await ctx.db.get(args.roadmapId);
+    if (!roadmap) {
+      throw new Error("Roadmap not found");
+    }
+
+    const description = args.description || 
+      `${args.action.charAt(0).toUpperCase() + args.action.slice(1)} roadmap "${roadmap.name}"`;
+
+    return await ctx.db.insert("activities", {
+      type: `roadmap.${args.action}`,
+      description,
+      userId: args.userId,
+      entityType: "roadmap",
+      entityId: args.roadmapId,
+      metadata: {
+        roadmapId: args.roadmapId,
+        projectId: roadmap.projectId,
+      },
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// Create milestone activity
+export const createMilestoneActivity = mutation({
+  args: {
+    milestoneId: v.id("milestones"),
+    userId: v.id("users"),
+    action: v.string(), // created, updated, completed, delayed
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Get milestone details for context
+    const milestone = await ctx.db.get(args.milestoneId);
+    if (!milestone) {
+      throw new Error("Milestone not found");
+    }
+
+    const description = args.description || 
+      `${args.action.charAt(0).toUpperCase() + args.action.slice(1)} milestone "${milestone.name}"`;
+
+    return await ctx.db.insert("activities", {
+      type: `milestone.${args.action}`,
+      description,
+      userId: args.userId,
+      entityType: "milestone",
+      entityId: args.milestoneId,
+      metadata: {
+        milestoneId: args.milestoneId,
+        roadmapId: milestone.roadmapId,
+        projectId: milestone.projectId,
+      },
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// Create idea activity
 export const createIdeaActivity = mutation({
   args: {
     ideaId: v.id("ideas"),
     userId: v.id("users"),
-    action: v.string(), // created, evaluated, scored, archived
+    action: v.string(), // created, updated, scored, archived
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get idea details for context
     const idea = await ctx.db.get(args.ideaId);
     if (!idea) {
       throw new Error("Idea not found");
@@ -499,3 +570,4 @@ export const createIdeaActivity = mutation({
     });
   },
 });
+
