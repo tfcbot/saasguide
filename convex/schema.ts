@@ -1,27 +1,32 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-// The schema is entirely optional.
-// You can delete this file (schema.ts) and the
-// app will continue to work.
-// The schema provides more precise TypeScript types.
+// Comprehensive schema definition for SaaS Guide application
+// Provides complete data validation and type safety with TypeScript
 export default defineSchema({
-  // Demo table - can be removed later
-  numbers: defineTable({
-    value: v.number(),
-  }),
-
-  // User data model
+  // User and Authentication
   users: defineTable({
     name: v.string(),
     email: v.string(),
-    clerkId: v.optional(v.string()), // Added for Clerk integration
+    clerkId: v.string(),
+    profileImageUrl: v.optional(v.string()),
+    role: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_email", ["email"])
-    .index("by_clerk_id", ["clerkId"]),
+  }).index("by_clerk_id", ["clerkId"])
+    .index("by_email", ["email"]),
 
-  // Project data model
+  userPreferences: defineTable({
+    userId: v.id("users"),
+    theme: v.optional(v.string()),
+    notifications: v.optional(v.boolean()),
+    emailFrequency: v.optional(v.string()),
+    dashboardLayout: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"]),
+
+  // Projects and Tasks
   projects: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -34,19 +39,19 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_user_id", ["userId"]),
 
-  // Development phase data model
   developmentPhases: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
     projectId: v.id("projects"),
+    userId: v.id("users"),
     status: v.string(),
     progress: v.number(),
     order: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_project_id", ["projectId"]),
+  }).index("by_project_id", ["projectId"])
+    .index("by_user_id", ["userId"]),
 
-  // Task data model
   tasks: defineTable({
     title: v.string(),
     description: v.optional(v.string()),
@@ -65,7 +70,7 @@ export default defineSchema({
     .index("by_user_id", ["userId"])
     .index("by_assignee_id", ["assigneeId"]),
 
-  // Marketing campaign data model
+  // Marketing Campaigns
   marketingCampaigns: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -83,7 +88,6 @@ export default defineSchema({
   }).index("by_user_id", ["userId"])
     .index("by_status", ["status"]),
 
-  // Campaign metrics data model
   campaignMetrics: defineTable({
     campaignId: v.id("marketingCampaigns"),
     impressions: v.optional(v.number()),
@@ -100,7 +104,6 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_campaign_id", ["campaignId"]),
 
-  // Campaign template data model
   campaignTemplates: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -115,7 +118,7 @@ export default defineSchema({
     .index("by_type", ["type"])
     .index("public_templates", ["isPublic"]),
 
-  // Customer data model
+  // Sales and Customers
   customers: defineTable({
     name: v.string(),
     email: v.optional(v.string()),
@@ -130,10 +133,8 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user_id", ["userId"])
-    .index("by_status", ["status"])
-    .index("by_email", ["email"]),
+    .index("by_status", ["status"]),
 
-  // Deal data model
   deals: defineTable({
     title: v.string(),
     description: v.optional(v.string()),
@@ -151,7 +152,6 @@ export default defineSchema({
     .index("by_customer_id", ["customerId"])
     .index("by_stage", ["stage"]),
 
-  // Sales activity data model
   salesActivities: defineTable({
     type: v.string(), // call, email, meeting, note, task
     description: v.string(),
@@ -166,10 +166,9 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_user_id", ["userId"])
     .index("by_customer_id", ["customerId"])
-    .index("by_deal_id", ["dealId"])
-    .index("by_date", ["date"]),
+    .index("by_deal_id", ["dealId"]),
 
-  // Roadmap data model
+  // Roadmap and Features
   roadmaps: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -181,10 +180,8 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user_id", ["userId"])
-    .index("by_project_id", ["projectId"])
-    .index("by_status", ["status"]),
+    .index("by_project_id", ["projectId"]),
 
-  // Milestone data model
   milestones: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -199,10 +196,8 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_roadmap_id", ["roadmapId"])
     .index("by_project_id", ["projectId"])
-    .index("by_user_id", ["userId"])
-    .index("by_date", ["date"]),
+    .index("by_user_id", ["userId"]),
 
-  // Feature data model
   features: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -222,10 +217,9 @@ export default defineSchema({
   }).index("by_roadmap_id", ["roadmapId"])
     .index("by_milestone_id", ["milestoneId"])
     .index("by_project_id", ["projectId"])
-    .index("by_user_id", ["userId"])
-    .index("by_status", ["status"]),
+    .index("by_user_id", ["userId"]),
 
-  // Idea data model
+  // Idea Scorer
   ideas: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -234,10 +228,8 @@ export default defineSchema({
     totalScore: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_user_id", ["userId"])
-    .index("by_status", ["status"]),
+  }).index("by_user_id", ["userId"]),
 
-  // Idea criteria data model
   ideaCriteria: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -250,7 +242,6 @@ export default defineSchema({
   }).index("by_user_id", ["userId"])
     .index("default_criteria", ["isDefault"]),
 
-  // Idea score data model
   ideaScores: defineTable({
     ideaId: v.id("ideas"),
     criteriaId: v.id("ideaCriteria"),
@@ -263,7 +254,6 @@ export default defineSchema({
     .index("by_criteria_id", ["criteriaId"])
     .index("by_user_id", ["userId"]),
 
-  // Idea comparison data model
   ideaComparisons: defineTable({
     name: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -273,7 +263,7 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_user_id", ["userId"]),
 
-  // Activity data model
+  // Activities and Notifications
   activities: defineTable({
     type: v.string(), // project.created, task.completed, campaign.launched, etc.
     description: v.string(),
@@ -295,7 +285,6 @@ export default defineSchema({
     .index("by_entity", ["entityType", "entityId"])
     .index("recent_activities", ["createdAt"]),
 
-  // Notification data model
   notifications: defineTable({
     title: v.string(),
     message: v.string(),
