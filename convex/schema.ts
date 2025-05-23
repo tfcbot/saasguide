@@ -112,4 +112,58 @@ export default defineSchema({
   }).index("by_user_id", ["userId"])
     .index("by_type", ["type"])
     .index("public_templates", ["isPublic"]),
+
+  // Customer data model
+  customers: defineTable({
+    name: v.string(),
+    email: v.optional(v.string()),
+    company: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    website: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    size: v.optional(v.string()),
+    status: v.string(), // lead, prospect, customer, churned
+    userId: v.id("users"),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_email", ["email"]),
+
+  // Deal data model
+  deals: defineTable({
+    title: v.string(),
+    description: v.optional(v.string()),
+    customerId: v.id("customers"),
+    userId: v.id("users"),
+    stage: v.string(), // lead, qualified, proposal, negotiation, closed-won, closed-lost
+    value: v.optional(v.number()),
+    probability: v.optional(v.number()),
+    expectedCloseDate: v.optional(v.number()),
+    actualCloseDate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("by_customer_id", ["customerId"])
+    .index("by_stage", ["stage"]),
+
+  // Sales activity data model
+  salesActivities: defineTable({
+    type: v.string(), // call, email, meeting, note, task
+    description: v.string(),
+    customerId: v.id("customers"),
+    dealId: v.optional(v.id("deals")),
+    userId: v.id("users"),
+    date: v.number(),
+    completed: v.boolean(),
+    outcome: v.optional(v.string()),
+    scheduledDate: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("by_customer_id", ["customerId"])
+    .index("by_deal_id", ["dealId"])
+    .index("by_date", ["date"]),
 });
