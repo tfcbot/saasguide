@@ -1,6 +1,15 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
+// Helper function to get user by Clerk ID (placeholder for future Clerk integration)
+async function getUserByClerkId(ctx: any, clerkId: string) {
+  // Use the proper Clerk ID index when available
+  return await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q: any) => q.eq("clerkId", clerkId))
+    .first();
+}
+
 // Create a new notification
 export const createNotification = mutation({
   args: {
@@ -34,6 +43,55 @@ export const createNotification = mutation({
       title: args.title,
       message: args.message,
       userId: args.userId,
+      type: args.type,
+      read: false,
+      activityId: args.activityId,
+      entityType: args.entityType,
+      entityId: args.entityId,
+      metadata: args.metadata,
+      createdAt: Date.now(),
+    });
+    
+    return notificationId;
+  },
+});
+
+// Create notification function (auth-enabled version)
+export const createNotificationAuth = mutation({
+  args: {
+    title: v.string(),
+    message: v.string(),
+    type: v.string(),
+    activityId: v.optional(v.id("activities")),
+    entityType: v.optional(v.string()),
+    entityId: v.optional(v.string()),
+    metadata: v.optional(v.object({
+      projectId: v.optional(v.id("projects")),
+      taskId: v.optional(v.id("tasks")),
+      campaignId: v.optional(v.id("marketingCampaigns")),
+      dealId: v.optional(v.id("deals")),
+      customerId: v.optional(v.id("customers")),
+      roadmapId: v.optional(v.id("roadmaps")),
+      milestoneId: v.optional(v.id("milestones")),
+      ideaId: v.optional(v.id("ideas")),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await getUserByClerkId(ctx, identity.subject);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Create notification
+    const notificationId = await ctx.db.insert("notifications", {
+      title: args.title,
+      message: args.message,
+      userId: user._id,
       type: args.type,
       read: false,
       activityId: args.activityId,
@@ -547,5 +605,109 @@ export const createDealNotification = mutation({
       },
       createdAt: Date.now(),
     });
+  },
+});
+
+// Get notifications function (auth-enabled version)
+export const getNotificationsAuth = query({
+  args: {
+    unreadOnly: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return [];
+    }
+
+    const user = await getUserByClerkId(ctx, identity.subject);
+    if (!user) {
+      return [];
+    }
+    
+    const limit = args.limit || 20;
+    
+    let notificationsQuery;
+    
+    if (args.unreadOnly) {
+      notificationsQuery = ctx.db
+        .query("notifications")
+        .withIndex("unread_notifications", (q) => 
+          q.eq("userId", user._id).eq("read", false)
+        );
+    } else {
+      notificationsQuery = ctx.db
+        .query("notifications")
+        .withIndex("by_user_id", (q) => q.eq("userId", user._id));
+    }
+    
+    const notifications = await notificationsQuery
+      .order("desc")
+      .take(limit);
+    
+    return notifications;
+  },
+});
+
+// Mark notification as read function (auth-enabled version)
+export const markNotificationAsReadAuth = mutation({
+  args: {
+    notificationId: v.id("notifications"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await getUserByClerkId(ctx, identity.subject);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify notification exists and user has access
+    const notification = await ctx.db.get(args.notificationId);
+    if (!notification || notification.userId !== user._id) {
+      throw new Error("Notification not found or access denied");
+    }
+    
+    // Mark notification as read
+    await ctx.db.patch(args.notificationId, {
+      read: true,
+    });
+    
+    return args.notificationId;
+  },
+});
+
+// Mark all notifications as read function (auth-enabled version)
+export const markAllNotificationsAsReadAuth = mutation({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await getUserByClerkId(ctx, identity.subject);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get all unread notifications
+    const unreadNotifications = await ctx.db
+      .query("notifications")
+      .withIndex("unread_notifications", (q) => 
+        q.eq("userId", user._id).eq("read", false)
+      )
+      .collect();
+    
+    // Mark all as read
+    for (const notification of unreadNotifications) {
+      await ctx.db.patch(notification._id, {
+        read: true,
+      });
+    }
+    
+    return unreadNotifications.length;
   },
 });
