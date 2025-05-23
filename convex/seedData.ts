@@ -8,6 +8,7 @@ export const seedDatabase = mutation({
     const user1Id = await ctx.db.insert("users", {
       name: "John Doe",
       email: "john@example.com",
+      clerkId: "user_demo_1",
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -15,6 +16,7 @@ export const seedDatabase = mutation({
     const user2Id = await ctx.db.insert("users", {
       name: "Jane Smith",
       email: "jane@example.com",
+      clerkId: "user_demo_2",
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
