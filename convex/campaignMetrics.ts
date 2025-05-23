@@ -26,6 +26,69 @@ export const createCampaignMetrics = mutation({
   },
 });
 
+// Enhanced create campaign metrics with authentication and activity logging
+export const createCampaignMetricsEnhanced = mutation({
+  args: {
+    campaignId: v.id("marketingCampaigns"),
+    userId: v.id("users"),
+    impressions: v.optional(v.number()),
+    clicks: v.optional(v.number()),
+    conversions: v.optional(v.number()),
+    openRate: v.optional(v.number()),
+    clickRate: v.optional(v.number()),
+    conversionRate: v.optional(v.number()),
+    cost: v.optional(v.number()),
+    revenue: v.optional(v.number()),
+    roi: v.optional(v.number()),
+    date: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify campaign exists and user has access
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!campaign || campaign.userId !== args.userId) {
+      throw new Error("Campaign not found or access denied");
+    }
+    
+    const now = Date.now();
+    const metricsId = await ctx.db.insert("campaignMetrics", {
+      campaignId: args.campaignId,
+      impressions: args.impressions || 0,
+      clicks: args.clicks || 0,
+      conversions: args.conversions || 0,
+      openRate: args.openRate || 0,
+      clickRate: args.clickRate || 0,
+      conversionRate: args.conversionRate || 0,
+      cost: args.cost || 0,
+      revenue: args.revenue || 0,
+      roi: args.roi || 0,
+      date: args.date,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "campaign.metrics.created",
+      description: `Added metrics for campaign "${campaign.name}"`,
+      userId: args.userId,
+      entityType: "campaign",
+      entityId: args.campaignId,
+      metadata: {
+        campaignId: args.campaignId,
+      },
+      createdAt: now,
+    });
+    
+    return metricsId;
+  },
+});
+
 // Get all metrics for a campaign
 export const getCampaignMetrics = query({
   args: { campaignId: v.id("marketingCampaigns") },
@@ -82,6 +145,79 @@ export const updateCampaignMetrics = mutation({
       ...filteredUpdates,
       updatedAt: Date.now(),
     });
+  },
+});
+
+// Enhanced update campaign metrics with automatic calculation and activity logging
+export const updateCampaignMetricsEnhanced = mutation({
+  args: {
+    metricsId: v.id("campaignMetrics"),
+    userId: v.id("users"),
+    impressions: v.optional(v.number()),
+    clicks: v.optional(v.number()),
+    conversions: v.optional(v.number()),
+    openRate: v.optional(v.number()),
+    cost: v.optional(v.number()),
+    revenue: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the metrics and verify access
+    const metrics = await ctx.db.get(args.metricsId);
+    if (!metrics) {
+      throw new Error("Metrics not found");
+    }
+    
+    // Verify campaign access
+    const campaign = await ctx.db.get(metrics.campaignId);
+    if (!campaign || campaign.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Calculate derived metrics
+    const impressions = args.impressions !== undefined ? args.impressions : (metrics.impressions || 0);
+    const clicks = args.clicks !== undefined ? args.clicks : (metrics.clicks || 0);
+    const conversions = args.conversions !== undefined ? args.conversions : (metrics.conversions || 0);
+    const cost = args.cost !== undefined ? args.cost : (metrics.cost || 0);
+    const revenue = args.revenue !== undefined ? args.revenue : (metrics.revenue || 0);
+    const openRate = args.openRate !== undefined ? args.openRate : (metrics.openRate || 0);
+    
+    const clickRate = impressions > 0 ? (clicks / impressions) * 100 : 0;
+    const conversionRate = clicks > 0 ? (conversions / clicks) * 100 : 0;
+    const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
+    
+    const result = await ctx.db.patch(args.metricsId, {
+      impressions,
+      clicks,
+      conversions,
+      openRate,
+      clickRate,
+      conversionRate,
+      cost,
+      revenue,
+      roi,
+      updatedAt: Date.now(),
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "campaign.metrics.updated",
+      description: `Updated metrics for campaign "${campaign.name}"`,
+      userId: args.userId,
+      entityType: "campaign",
+      entityId: metrics.campaignId,
+      metadata: {
+        campaignId: metrics.campaignId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
   },
 });
 
@@ -151,4 +287,3 @@ export const getAggregatedCampaignMetrics = query({
     };
   },
 });
-

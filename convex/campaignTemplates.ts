@@ -22,6 +22,54 @@ export const createCampaignTemplate = mutation({
   },
 });
 
+// Enhanced create campaign template with authentication and activity logging
+export const createCampaignTemplateEnhanced = mutation({
+  args: {
+    name: v.string(),
+    description: v.optional(v.string()),
+    userId: v.id("users"),
+    type: v.string(),
+    goal: v.string(),
+    content: v.optional(v.string()),
+    isPublic: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    const now = Date.now();
+    const templateId = await ctx.db.insert("campaignTemplates", {
+      name: args.name,
+      description: args.description,
+      userId: args.userId,
+      type: args.type,
+      goal: args.goal,
+      content: args.content,
+      isPublic: args.isPublic,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "campaign.template.created",
+      description: `Created campaign template "${args.name}"`,
+      userId: args.userId,
+      entityType: "template",
+      entityId: templateId,
+      metadata: {
+        campaignId: undefined, // Templates don't have campaign IDs
+      },
+      createdAt: now,
+    });
+    
+    return templateId;
+  },
+});
+
 // Get all campaign templates for a user
 export const getCampaignTemplatesByUser = query({
   args: { userId: v.id("users") },
@@ -133,6 +181,89 @@ export const createCampaignFromTemplate = mutation({
   },
 });
 
+// Enhanced create campaign from template with authentication and activity logging
+export const createCampaignFromTemplateEnhanced = mutation({
+  args: {
+    templateId: v.id("campaignTemplates"),
+    userId: v.id("users"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    status: v.string(),
+    targetAudience: v.optional(v.array(v.string())),
+    budget: v.optional(v.number()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get template and verify access (user's own template or public template)
+    const template = await ctx.db.get(args.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    
+    if (template.userId !== args.userId && !template.isPublic) {
+      throw new Error("Access denied to template");
+    }
+
+    const now = Date.now();
+    const campaignId = await ctx.db.insert("marketingCampaigns", {
+      name: args.name,
+      description: args.description || template.description,
+      userId: args.userId,
+      type: template.type,
+      goal: template.goal,
+      status: args.status,
+      targetAudience: args.targetAudience,
+      budget: args.budget,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      content: template.content,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Initialize metrics if campaign is active
+    if (args.status === "active") {
+      await ctx.db.insert("campaignMetrics", {
+        campaignId,
+        impressions: 0,
+        clicks: 0,
+        conversions: 0,
+        openRate: 0,
+        clickRate: 0,
+        conversionRate: 0,
+        cost: 0,
+        revenue: 0,
+        roi: 0,
+        date: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "campaign.created.from.template",
+      description: `Created campaign "${args.name}" from template "${template.name}"`,
+      userId: args.userId,
+      entityType: "campaign",
+      entityId: campaignId,
+      metadata: {
+        campaignId,
+      },
+      createdAt: now,
+    });
+    
+    return campaignId;
+  },
+});
+
 // Get templates accessible to a user (their own + public)
 export const getAccessibleCampaignTemplates = query({
   args: { userId: v.id("users") },
@@ -157,4 +288,3 @@ export const getAccessibleCampaignTemplates = query({
     return [...userTemplates, ...filteredPublicTemplates];
   },
 });
-
