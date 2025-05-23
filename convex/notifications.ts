@@ -6,7 +6,7 @@ async function getUserByClerkId(ctx: any, clerkId: string) {
   // Use the proper Clerk ID index when available
   return await ctx.db
     .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
+    .withIndex("by_clerk_id", (q: any) => q.eq("clerkId", clerkId))
     .first();
 }
 
