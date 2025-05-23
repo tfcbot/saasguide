@@ -1,6 +1,102 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
+// Enhanced get recent activities function with user authentication
+export const getRecentActivities = query({
+  args: {
+    userId: v.id("users"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+    
+    const limit = args.limit || 10;
+    
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .take(limit);
+    
+    return activities;
+  },
+});
+
+// Enhanced get entity activities function with user authentication
+export const getEntityActivities = query({
+  args: {
+    userId: v.id("users"),
+    entityType: v.string(),
+    entityId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+    
+    const limit = args.limit || 10;
+    
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_entity", (q) => 
+        q.eq("entityType", args.entityType).eq("entityId", args.entityId)
+      )
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .order("desc")
+      .take(limit);
+    
+    return activities;
+  },
+});
+
+// Enhanced get dashboard activity feed function
+export const getDashboardActivityFeed = query({
+  args: {
+    userId: v.id("users"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return {
+        activities: [],
+        notifications: [],
+      };
+    }
+    
+    const limit = args.limit || 10;
+    
+    // Get recent activities
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .take(limit);
+    
+    // Get unread notifications
+    const notifications = await ctx.db
+      .query("notifications")
+      .withIndex("unread_notifications", (q) => 
+        q.eq("userId", args.userId).eq("read", false)
+      )
+      .order("desc")
+      .take(limit);
+    
+    return {
+      activities,
+      notifications,
+    };
+  },
+});
+
 // Create a new activity
 export const createActivity = mutation({
   args: {
@@ -28,7 +124,7 @@ export const createActivity = mutation({
   },
 });
 
-// Get all activities for a user
+// Get all activities for a user (backward compatibility)
 export const getActivitiesByUser = query({
   args: { 
     userId: v.id("users"),
@@ -45,8 +141,8 @@ export const getActivitiesByUser = query({
   },
 });
 
-// Get recent activities across all users (for admin dashboard)
-export const getRecentActivities = query({
+// Get recent activities across all users (for admin dashboard) (backward compatibility)
+export const getRecentActivitiesAll = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const limit = args.limit || 20;
