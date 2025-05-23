@@ -25,6 +25,7 @@ import { AIInsights } from "./components/ai-insights"
 import { DevelopmentTracker } from "./components/development-tracker"
 import { MarketingCampaigns } from "./components/marketing-campaigns"
 import { SalesTracker } from "./components/sales-tracker"
+import { InteractiveRoadmap } from "./components/interactive-roadmap"
 import { RecentActivity } from "./components/recent-activity"
 
 export default function DashboardPage() {
@@ -299,15 +300,7 @@ export default function DashboardPage() {
                   <SalesTracker />
                 </TabsContent>
                 <TabsContent value="roadmap" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Interactive Roadmap</CardTitle>
-                      <CardDescription>Plan and visualize your product roadmap</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p>Interactive roadmap content will be implemented in a future task.</p>
-                    </CardContent>
-                  </Card>
+                  <InteractiveRoadmap />
                 </TabsContent>
                 <TabsContent value="idea-scorer" className="space-y-6">
                   <Card>
