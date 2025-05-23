@@ -53,6 +53,7 @@ export const seedDatabase = mutation({
       name: "Planning & Design",
       description: "Initial planning, wireframes, and system design",
       projectId: project1Id,
+      userId: user1Id,
       status: "completed",
       progress: 1.0,
       order: 1,
@@ -64,6 +65,7 @@ export const seedDatabase = mutation({
       name: "Backend Development",
       description: "API development, database setup, and server configuration",
       projectId: project1Id,
+      userId: user1Id,
       status: "in_progress",
       progress: 0.6,
       order: 2,
@@ -75,18 +77,32 @@ export const seedDatabase = mutation({
       name: "Frontend Development",
       description: "User interface development and integration",
       projectId: project1Id,
-      status: "todo",
+      userId: user1Id,
+      status: "not_started",
       progress: 0.0,
       order: 3,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
-    // Create development phases for project 2
     const phase4Id = await ctx.db.insert("developmentPhases", {
+      name: "Testing & Deployment",
+      description: "Quality assurance, testing, and production deployment",
+      projectId: project1Id,
+      userId: user1Id,
+      status: "not_started",
+      progress: 0.0,
+      order: 4,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Create development phases for project 2
+    const phase5Id = await ctx.db.insert("developmentPhases", {
       name: "Research & Planning",
       description: "Market research and technical planning",
       projectId: project2Id,
+      userId: user2Id,
       status: "in_progress",
       progress: 0.3,
       order: 1,
@@ -170,7 +186,7 @@ export const seedDatabase = mutation({
         title: "Market research analysis",
         description: "Analyze competitor apps and market opportunities",
         projectId: project2Id,
-        phaseId: phase4Id,
+        phaseId: phase5Id,
         userId: user2Id,
         assigneeId: user2Id,
         status: "in_progress",

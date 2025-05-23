@@ -137,6 +137,7 @@ export const createProjectEnhanced = mutation({
         name: phase.name,
         description: `${phase.name} phase for project`,
         projectId,
+        userId: args.userId,
         status: "not-started",
         progress: 0,
         order: phase.order,

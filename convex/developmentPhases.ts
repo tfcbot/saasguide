@@ -27,17 +27,26 @@ export const createDevelopmentPhase = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     projectId: v.id("projects"),
+    userId: v.id("users"),
     status: v.string(),
     progress: v.number(),
     order: v.number(),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    return await ctx.db.insert("developmentPhases", {
-      ...args,
+    const phaseId = await ctx.db.insert("developmentPhases", {
+      name: args.name,
+      description: args.description,
+      projectId: args.projectId,
+      userId: args.userId,
+      status: args.status,
+      progress: 0,
+      order: args.order,
       createdAt: now,
       updatedAt: now,
     });
+    
+    return phaseId;
   },
 });
 
@@ -120,6 +129,7 @@ export const createDevelopmentPhaseEnhanced = mutation({
       name: args.name,
       description: args.description,
       projectId: args.projectId,
+      userId: args.userId,
       status: args.status,
       progress: 0,
       order: args.order,
