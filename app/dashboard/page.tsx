@@ -26,6 +26,7 @@ import { DevelopmentTracker } from "./components/development-tracker"
 import { MarketingCampaigns } from "./components/marketing-campaigns"
 import { SalesTracker } from "./components/sales-tracker"
 import { InteractiveRoadmap } from "./components/interactive-roadmap"
+import { IdeaScorer } from "./components/idea-scorer"
 import { RecentActivity } from "./components/recent-activity"
 
 export default function DashboardPage() {
@@ -303,15 +304,7 @@ export default function DashboardPage() {
                   <InteractiveRoadmap />
                 </TabsContent>
                 <TabsContent value="idea-scorer" className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Idea Scorer</CardTitle>
-                      <CardDescription>Evaluate and score your agentic SaaS ideas</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p>Idea scorer content will be implemented in a future task.</p>
-                    </CardContent>
-                  </Card>
+                  <IdeaScorer />
                 </TabsContent>
               </Tabs>
             </div>
