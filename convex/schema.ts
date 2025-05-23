@@ -15,9 +15,11 @@ export default defineSchema({
   users: defineTable({
     name: v.string(),
     email: v.string(),
+    clerkId: v.optional(v.string()), // Added for Clerk integration
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_email", ["email"]),
+  }).index("by_email", ["email"])
+    .index("by_clerk_id", ["clerkId"]),
 
   // Project data model
   projects: defineTable({

@@ -1,6 +1,15 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
+// Helper function to get user by Clerk ID (placeholder for future Clerk integration)
+async function getUserByClerkId(ctx: any, clerkId: string) {
+  // Use the proper Clerk ID index when available
+  return await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
+    .first();
+}
+
 // Create a new activity
 export const createActivity = mutation({
   args: {
@@ -42,6 +51,114 @@ export const getActivitiesByUser = query({
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(limit);
+  },
+});
+
+// Get recent activities function (auth-enabled version)
+export const getRecentActivitiesAuth = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return [];
+    }
+
+    const user = await getUserByClerkId(ctx, identity.subject);
+    if (!user) {
+      return [];
+    }
+    
+    const limit = args.limit || 10;
+    
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(limit);
+    
+    return activities;
+  },
+});
+
+// Get entity activities function (auth-enabled version)
+export const getEntityActivitiesAuth = query({
+  args: {
+    entityType: v.string(),
+    entityId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return [];
+    }
+
+    const user = await getUserByClerkId(ctx, identity.subject);
+    if (!user) {
+      return [];
+    }
+    
+    const limit = args.limit || 10;
+    
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_entity", (q) => 
+        q.eq("entityType", args.entityType).eq("entityId", args.entityId)
+      )
+      .filter((q) => q.eq(q.field("userId"), user._id))
+      .order("desc")
+      .take(limit);
+    
+    return activities;
+  },
+});
+
+// Get dashboard activity feed function
+export const getDashboardActivityFeed = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return {
+        activities: [],
+        notifications: [],
+      };
+    }
+
+    const user = await getUserByClerkId(ctx, identity.subject);
+    if (!user) {
+      return {
+        activities: [],
+        notifications: [],
+      };
+    }
+    
+    const limit = args.limit || 10;
+    
+    // Get recent activities
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(limit);
+    
+    // Get unread notifications
+    const notifications = await ctx.db
+      .query("notifications")
+      .withIndex("unread_notifications", (q) => 
+        q.eq("userId", user._id).eq("read", false)
+      )
+      .order("desc")
+      .take(limit);
+    
+    return {
+      activities,
+      notifications,
+    };
   },
 });
 
