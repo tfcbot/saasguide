@@ -166,4 +166,60 @@ export default defineSchema({
     .index("by_customer_id", ["customerId"])
     .index("by_deal_id", ["dealId"])
     .index("by_date", ["date"]),
+
+  // Roadmap data model
+  roadmaps: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    projectId: v.id("projects"),
+    userId: v.id("users"),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    status: v.string(), // draft, active, archived
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"])
+    .index("by_project_id", ["projectId"])
+    .index("by_status", ["status"]),
+
+  // Milestone data model
+  milestones: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    roadmapId: v.id("roadmaps"),
+    projectId: v.id("projects"),
+    userId: v.id("users"),
+    date: v.number(),
+    status: v.string(), // planned, in-progress, completed, delayed
+    color: v.optional(v.string()),
+    order: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_roadmap_id", ["roadmapId"])
+    .index("by_project_id", ["projectId"])
+    .index("by_user_id", ["userId"])
+    .index("by_date", ["date"]),
+
+  // Feature data model
+  features: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    roadmapId: v.id("roadmaps"),
+    milestoneId: v.optional(v.id("milestones")),
+    projectId: v.id("projects"),
+    userId: v.id("users"),
+    status: v.string(), // planned, in-progress, completed, delayed
+    priority: v.number(), // 1-5
+    effort: v.optional(v.number()), // 1-5
+    impact: v.optional(v.number()), // 1-5
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    dependencies: v.optional(v.array(v.id("features"))),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_roadmap_id", ["roadmapId"])
+    .index("by_milestone_id", ["milestoneId"])
+    .index("by_project_id", ["projectId"])
+    .index("by_user_id", ["userId"])
+    .index("by_status", ["status"]),
 });

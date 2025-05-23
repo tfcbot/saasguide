@@ -557,6 +557,212 @@ export const seedDatabase = mutation({
       });
     }
 
+    // Create sample roadmaps
+    const roadmap1Id = await ctx.db.insert("roadmaps", {
+      name: "SaaS Platform Roadmap 2024",
+      description: "Complete roadmap for building our SaaS platform with key features and milestones",
+      projectId: project1Id,
+      userId: user1Id,
+      startDate: Date.now() - (30 * 24 * 60 * 60 * 1000), // 30 days ago
+      endDate: Date.now() + (180 * 24 * 60 * 60 * 1000), // 180 days from now
+      status: "active",
+      createdAt: Date.now() - (35 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const roadmap2Id = await ctx.db.insert("roadmaps", {
+      name: "Mobile App Development Roadmap",
+      description: "Roadmap for developing our mobile application with cross-platform support",
+      projectId: project2Id,
+      userId: user2Id,
+      startDate: Date.now() + (14 * 24 * 60 * 60 * 1000), // 14 days from now
+      endDate: Date.now() + (120 * 24 * 60 * 60 * 1000), // 120 days from now
+      status: "draft",
+      createdAt: Date.now() - (7 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    // Create sample milestones
+    const milestone1Id = await ctx.db.insert("milestones", {
+      name: "MVP Launch",
+      description: "Launch minimum viable product with core features",
+      roadmapId: roadmap1Id,
+      projectId: project1Id,
+      userId: user1Id,
+      date: Date.now() + (60 * 24 * 60 * 60 * 1000), // 60 days from now
+      status: "in-progress",
+      color: "#10B981",
+      order: 1,
+      createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const milestone2Id = await ctx.db.insert("milestones", {
+      name: "Beta Release",
+      description: "Release beta version for user testing and feedback",
+      roadmapId: roadmap1Id,
+      projectId: project1Id,
+      userId: user1Id,
+      date: Date.now() + (120 * 24 * 60 * 60 * 1000), // 120 days from now
+      status: "planned",
+      color: "#3B82F6",
+      order: 2,
+      createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const milestone3Id = await ctx.db.insert("milestones", {
+      name: "Public Launch",
+      description: "Full public launch with marketing campaign",
+      roadmapId: roadmap1Id,
+      projectId: project1Id,
+      userId: user1Id,
+      date: Date.now() + (180 * 24 * 60 * 60 * 1000), // 180 days from now
+      status: "planned",
+      color: "#8B5CF6",
+      order: 3,
+      createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const milestone4Id = await ctx.db.insert("milestones", {
+      name: "Mobile App Alpha",
+      description: "First alpha version of mobile application",
+      roadmapId: roadmap2Id,
+      projectId: project2Id,
+      userId: user2Id,
+      date: Date.now() + (90 * 24 * 60 * 60 * 1000), // 90 days from now
+      status: "planned",
+      color: "#F59E0B",
+      order: 1,
+      createdAt: Date.now() - (7 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    // Create sample features
+    const feature1Id = await ctx.db.insert("features", {
+      name: "User Authentication System",
+      description: "Complete user registration, login, and password reset functionality",
+      roadmapId: roadmap1Id,
+      milestoneId: milestone1Id,
+      projectId: project1Id,
+      userId: user1Id,
+      status: "completed",
+      priority: 5,
+      effort: 3,
+      impact: 5,
+      startDate: Date.now() - (20 * 24 * 60 * 60 * 1000),
+      endDate: Date.now() - (5 * 24 * 60 * 60 * 1000),
+      createdAt: Date.now() - (25 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const feature2Id = await ctx.db.insert("features", {
+      name: "Dashboard Analytics",
+      description: "Real-time analytics dashboard with charts and metrics",
+      roadmapId: roadmap1Id,
+      milestoneId: milestone1Id,
+      projectId: project1Id,
+      userId: user1Id,
+      status: "in-progress",
+      priority: 4,
+      effort: 4,
+      impact: 4,
+      startDate: Date.now() - (10 * 24 * 60 * 60 * 1000),
+      endDate: Date.now() + (20 * 24 * 60 * 60 * 1000),
+      dependencies: [feature1Id],
+      createdAt: Date.now() - (15 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const feature3Id = await ctx.db.insert("features", {
+      name: "Payment Integration",
+      description: "Stripe payment processing for subscriptions and one-time payments",
+      roadmapId: roadmap1Id,
+      milestoneId: milestone2Id,
+      projectId: project1Id,
+      userId: user1Id,
+      status: "planned",
+      priority: 5,
+      effort: 3,
+      impact: 5,
+      startDate: Date.now() + (30 * 24 * 60 * 60 * 1000),
+      endDate: Date.now() + (50 * 24 * 60 * 60 * 1000),
+      dependencies: [feature1Id],
+      createdAt: Date.now() - (20 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const feature4Id = await ctx.db.insert("features", {
+      name: "API Documentation",
+      description: "Comprehensive API documentation with interactive examples",
+      roadmapId: roadmap1Id,
+      milestoneId: milestone2Id,
+      projectId: project1Id,
+      userId: user1Id,
+      status: "planned",
+      priority: 3,
+      effort: 2,
+      impact: 3,
+      startDate: Date.now() + (40 * 24 * 60 * 60 * 1000),
+      endDate: Date.now() + (55 * 24 * 60 * 60 * 1000),
+      createdAt: Date.now() - (20 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const feature5Id = await ctx.db.insert("features", {
+      name: "Mobile App UI Framework",
+      description: "Cross-platform UI framework setup with React Native",
+      roadmapId: roadmap2Id,
+      milestoneId: milestone4Id,
+      projectId: project2Id,
+      userId: user2Id,
+      status: "planned",
+      priority: 5,
+      effort: 4,
+      impact: 4,
+      startDate: Date.now() + (20 * 24 * 60 * 60 * 1000),
+      endDate: Date.now() + (45 * 24 * 60 * 60 * 1000),
+      createdAt: Date.now() - (7 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const feature6Id = await ctx.db.insert("features", {
+      name: "Offline Data Sync",
+      description: "Offline capability with automatic data synchronization",
+      roadmapId: roadmap2Id,
+      milestoneId: milestone4Id,
+      projectId: project2Id,
+      userId: user2Id,
+      status: "planned",
+      priority: 4,
+      effort: 5,
+      impact: 4,
+      startDate: Date.now() + (50 * 24 * 60 * 60 * 1000),
+      endDate: Date.now() + (80 * 24 * 60 * 60 * 1000),
+      dependencies: [feature5Id],
+      createdAt: Date.now() - (7 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
+    const feature7Id = await ctx.db.insert("features", {
+      name: "Advanced Search",
+      description: "Full-text search with filters and sorting capabilities",
+      roadmapId: roadmap1Id,
+      milestoneId: milestone3Id,
+      projectId: project1Id,
+      userId: user1Id,
+      status: "planned",
+      priority: 3,
+      effort: 3,
+      impact: 3,
+      startDate: Date.now() + (90 * 24 * 60 * 60 * 1000),
+      endDate: Date.now() + (110 * 24 * 60 * 60 * 1000),
+      dependencies: [feature2Id],
+      createdAt: Date.now() - (20 * 24 * 60 * 60 * 1000),
+      updatedAt: Date.now(),
+    });
+
     return {
       message: "Database seeded successfully",
       created: {
@@ -570,6 +776,9 @@ export const seedDatabase = mutation({
         customers: 3,
         deals: 3,
         salesActivities: salesActivities.length,
+        roadmaps: 2,
+        milestones: 4,
+        features: 7,
       },
     };
   },
