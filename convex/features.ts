@@ -28,6 +28,98 @@ export const createFeature = mutation({
   },
 });
 
+// Enhanced create feature with authentication and activity logging
+export const createFeatureEnhanced = mutation({
+  args: {
+    name: v.string(),
+    description: v.optional(v.string()),
+    roadmapId: v.id("roadmaps"),
+    milestoneId: v.optional(v.id("milestones")),
+    projectId: v.id("projects"),
+    userId: v.id("users"),
+    status: v.string(),
+    priority: v.number(),
+    effort: v.optional(v.number()),
+    impact: v.optional(v.number()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    dependencies: v.optional(v.array(v.id("features"))),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify roadmap exists and user has access
+    const roadmap = await ctx.db.get(args.roadmapId);
+    if (!roadmap || roadmap.userId !== args.userId) {
+      throw new Error("Roadmap not found or access denied");
+    }
+    
+    // Verify project exists and user has access
+    const project = await ctx.db.get(args.projectId);
+    if (!project || project.userId !== args.userId) {
+      throw new Error("Project not found or access denied");
+    }
+    
+    // Verify milestone if provided
+    if (args.milestoneId) {
+      const milestone = await ctx.db.get(args.milestoneId);
+      if (!milestone || milestone.roadmapId !== args.roadmapId || milestone.userId !== args.userId) {
+        throw new Error("Milestone not found or does not belong to roadmap");
+      }
+    }
+    
+    // Verify dependencies if provided
+    if (args.dependencies && args.dependencies.length > 0) {
+      for (const depId of args.dependencies) {
+        const dependency = await ctx.db.get(depId);
+        if (!dependency || dependency.roadmapId !== args.roadmapId || dependency.userId !== args.userId) {
+          throw new Error(`Dependency ${depId} not found or does not belong to roadmap`);
+        }
+      }
+    }
+    
+    const now = Date.now();
+    const featureId = await ctx.db.insert("features", {
+      name: args.name,
+      description: args.description,
+      roadmapId: args.roadmapId,
+      milestoneId: args.milestoneId,
+      projectId: args.projectId,
+      userId: args.userId,
+      status: args.status,
+      priority: args.priority,
+      effort: args.effort,
+      impact: args.impact,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      dependencies: args.dependencies || [],
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "feature.created",
+      description: `Created feature "${args.name}" for roadmap "${roadmap.name}"`,
+      userId: args.userId,
+      entityType: "feature",
+      entityId: featureId,
+      metadata: {
+        roadmapId: args.roadmapId,
+        milestoneId: args.milestoneId,
+        projectId: args.projectId,
+      },
+      createdAt: now,
+    });
+    
+    return featureId;
+  },
+});
+
 // Get all features for a roadmap
 export const getFeaturesByRoadmap = query({
   args: { roadmapId: v.id("roadmaps") },
@@ -124,6 +216,105 @@ export const updateFeature = mutation({
   },
 });
 
+// Enhanced update feature with activity logging and access control
+export const updateFeatureEnhanced = mutation({
+  args: {
+    featureId: v.id("features"),
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    milestoneId: v.optional(v.id("milestones")),
+    status: v.optional(v.string()),
+    priority: v.optional(v.number()),
+    effort: v.optional(v.number()),
+    impact: v.optional(v.number()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    dependencies: v.optional(v.array(v.id("features"))),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the feature and verify access
+    const feature = await ctx.db.get(args.featureId);
+    if (!feature) {
+      throw new Error("Feature not found");
+    }
+    
+    if (feature.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Verify milestone if provided
+    if (args.milestoneId) {
+      const milestone = await ctx.db.get(args.milestoneId);
+      if (!milestone || milestone.roadmapId !== feature.roadmapId || milestone.userId !== args.userId) {
+        throw new Error("Milestone not found or does not belong to roadmap");
+      }
+    }
+    
+    // Verify dependencies if provided
+    if (args.dependencies && args.dependencies.length > 0) {
+      for (const depId of args.dependencies) {
+        const dependency = await ctx.db.get(depId);
+        if (!dependency || dependency.roadmapId !== feature.roadmapId || dependency.userId !== args.userId) {
+          throw new Error(`Dependency ${depId} not found or does not belong to roadmap`);
+        }
+      }
+    }
+    
+    const { featureId, userId, ...updates } = args;
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    
+    const result = await ctx.db.patch(featureId, {
+      ...filteredUpdates,
+      updatedAt: Date.now(),
+    });
+    
+    // Log activity based on what changed
+    let activityType = "feature.updated";
+    let description = `Updated feature "${feature.name}"`;
+    
+    if (args.status && args.status !== feature.status) {
+      activityType = "feature.status_changed";
+      description = `Changed feature "${feature.name}" status from ${feature.status} to ${args.status}`;
+      
+      if (args.status === "completed") {
+        activityType = "feature.completed";
+        description = `Completed feature "${feature.name}"`;
+      }
+    }
+    
+    await ctx.db.insert("activities", {
+      type: activityType,
+      description,
+      userId: args.userId,
+      entityType: "feature",
+      entityId: featureId,
+      metadata: {
+
+        roadmapId: feature.roadmapId,
+        milestoneId: feature.milestoneId,
+        projectId: feature.projectId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    // Check if all features in milestone are completed
+    if (feature.milestoneId && args.status === "completed") {
+      await updateMilestoneProgress(ctx, feature.milestoneId);
+    }
+    
+    return result;
+  },
+});
+
 // Delete a feature
 export const deleteFeature = mutation({
   args: { featureId: v.id("features") },
@@ -131,6 +322,87 @@ export const deleteFeature = mutation({
     return await ctx.db.delete(args.featureId);
   },
 });
+
+// Enhanced delete feature with activity logging and access control
+export const deleteFeatureEnhanced = mutation({
+  args: { 
+    featureId: v.id("features"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the feature and verify access
+    const feature = await ctx.db.get(args.featureId);
+    if (!feature) {
+      throw new Error("Feature not found");
+    }
+    
+    if (feature.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Remove this feature from any dependencies
+    const dependentFeatures = await ctx.db
+      .query("features")
+      .withIndex("by_roadmap_id", (q: any) => q.eq("roadmapId", feature.roadmapId))
+      .collect();
+    
+    for (const depFeature of dependentFeatures) {
+      if (depFeature.dependencies && depFeature.dependencies.includes(args.featureId)) {
+        const updatedDependencies = depFeature.dependencies.filter(id => id !== args.featureId);
+        await ctx.db.patch(depFeature._id, {
+          dependencies: updatedDependencies,
+          updatedAt: Date.now(),
+        });
+      }
+    }
+    
+    // Delete the feature
+    const result = await ctx.db.delete(args.featureId);
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "feature.deleted",
+      description: `Deleted feature "${feature.name}"`,
+      userId: args.userId,
+      entityType: "feature",
+      entityId: args.featureId,
+      metadata: {
+        roadmapId: feature.roadmapId,
+        milestoneId: feature.milestoneId,
+        projectId: feature.projectId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
+  },
+});
+
+// Helper function to update milestone progress
+async function updateMilestoneProgress(ctx: any, milestoneId: string) {
+  const features = await ctx.db
+    .query("features")
+    .withIndex("by_milestone_id", (q: any) => q.eq("milestoneId", milestoneId))
+    .collect();
+  
+  if (features.length === 0) {
+    return;
+  }
+  
+  const completedFeatures = features.filter((feature: any) => feature.status === "completed").length;
+  const allCompleted = completedFeatures === features.length;
+  
+  await ctx.db.patch(milestoneId, {
+    status: allCompleted ? "completed" : "in-progress",
+    updatedAt: Date.now(),
+  });
+}
 
 // Get feature with dependencies and dependents
 export const getFeatureWithDependencies = query({
@@ -334,4 +606,3 @@ export const searchFeatures = query({
     );
   },
 });
-

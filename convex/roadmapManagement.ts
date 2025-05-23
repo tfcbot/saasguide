@@ -33,6 +33,7 @@ export const getRoadmapDashboard = query({
         active: roadmaps.filter(r => r.status === "active").length,
         draft: roadmaps.filter(r => r.status === "draft").length,
         archived: roadmaps.filter(r => r.status === "archived").length,
+        completed: roadmaps.filter(r => r.status === "completed").length,
       },
       milestones: {
         total: milestones.length,
@@ -52,10 +53,9 @@ export const getRoadmapDashboard = query({
         completed: features.filter(f => f.status === "completed").length,
         inProgress: features.filter(f => f.status === "in-progress").length,
         planned: features.filter(f => f.status === "planned").length,
-        delayed: features.filter(f => f.status === "delayed").length,
-        highPriority: features.filter(f => f.priority >= 4).length,
-        withDependencies: features.filter(f => f.dependencies && f.dependencies.length > 0).length,
-      },
+        blocked: features.filter(f => f.status === "blocked").length,
+        cancelled: features.filter(f => f.status === "cancelled").length,
+      }
     };
 
     // Calculate completion rates
@@ -82,6 +82,287 @@ export const getRoadmapDashboard = query({
       stats,
       completionRates,
       recentActivity,
+    };
+  },
+});
+
+// Enhanced get roadmap dashboard with access control
+export const getRoadmapDashboardEnhanced = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return null;
+    }
+
+    // Get all roadmaps for the user
+    const roadmaps = await ctx.db
+      .query("roadmaps")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Get all milestones for the user
+    const milestones = await ctx.db
+      .query("milestones")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Get all features for the user
+    const features = await ctx.db
+      .query("features")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Get recent activities
+    const recentActivities = await ctx.db
+      .query("activities")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .filter((q) => 
+        q.or(
+          q.eq(q.field("entityType"), "roadmap"),
+          q.eq(q.field("entityType"), "milestone"),
+          q.eq(q.field("entityType"), "feature")
+        )
+      )
+      .order("desc")
+      .take(20);
+
+    const now = Date.now();
+    const thirtyDaysFromNow = now + (30 * 24 * 60 * 60 * 1000);
+
+    // Calculate statistics
+    const stats = {
+      roadmaps: {
+        total: roadmaps.length,
+        active: roadmaps.filter(r => r.status === "active").length,
+        draft: roadmaps.filter(r => r.status === "draft").length,
+        archived: roadmaps.filter(r => r.status === "archived").length,
+        completed: roadmaps.filter(r => r.status === "completed").length,
+      },
+      milestones: {
+        total: milestones.length,
+        completed: milestones.filter(m => m.status === "completed").length,
+        inProgress: milestones.filter(m => m.status === "in-progress").length,
+        planned: milestones.filter(m => m.status === "planned").length,
+        delayed: milestones.filter(m => m.status === "delayed").length,
+        upcoming: milestones.filter(m => 
+          m.date <= thirtyDaysFromNow && m.status !== "completed"
+        ).length,
+        overdue: milestones.filter(m => 
+          m.date < now && m.status !== "completed"
+        ).length,
+      },
+      features: {
+        total: features.length,
+        completed: features.filter(f => f.status === "completed").length,
+        inProgress: features.filter(f => f.status === "in-progress").length,
+        planned: features.filter(f => f.status === "planned").length,
+        blocked: features.filter(f => f.status === "blocked").length,
+        cancelled: features.filter(f => f.status === "cancelled").length,
+      }
+    };
+
+    // Calculate completion rates
+    const roadmapCompletionRate = stats.roadmaps.total > 0 
+      ? (stats.roadmaps.completed / stats.roadmaps.total) * 100 
+      : 0;
+
+    const milestoneCompletionRate = stats.milestones.total > 0 
+      ? (stats.milestones.completed / stats.milestones.total) * 100 
+      : 0;
+
+    const featureCompletionRate = stats.features.total > 0 
+      ? (stats.features.completed / stats.features.total) * 100 
+      : 0;
+
+    return {
+      user,
+      roadmaps,
+      milestones,
+      features,
+      recentActivities,
+      stats,
+      metrics: {
+        roadmapCompletionRate: Math.round(roadmapCompletionRate * 100) / 100,
+        milestoneCompletionRate: Math.round(milestoneCompletionRate * 100) / 100,
+        featureCompletionRate: Math.round(featureCompletionRate * 100) / 100,
+      }
+    };
+  },
+});
+
+// Enhanced get roadmap overview with access control
+export const getRoadmapOverviewEnhanced = query({
+  args: { 
+    roadmapId: v.id("roadmaps"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return null;
+    }
+
+    // Verify roadmap access
+    const roadmap = await ctx.db.get(args.roadmapId);
+    if (!roadmap || roadmap.userId !== args.userId) {
+      return null;
+    }
+
+    // Get all milestones for this roadmap
+    const milestones = await ctx.db
+      .query("milestones")
+      .withIndex("by_roadmap_id", (q) => q.eq("roadmapId", args.roadmapId))
+      .order("asc")
+      .collect();
+
+    // Get all features for this roadmap
+    const features = await ctx.db
+      .query("features")
+      .withIndex("by_roadmap_id", (q) => q.eq("roadmapId", args.roadmapId))
+      .collect();
+
+    // Get roadmap activities
+    const activities = await ctx.db
+      .query("activities")
+      .withIndex("by_entity", (q) => 
+        q.eq("entityType", "roadmap").eq("entityId", args.roadmapId)
+      )
+      .order("desc")
+      .take(10);
+
+    // Calculate roadmap progress
+    const totalFeatures = features.length;
+    const completedFeatures = features.filter(f => f.status === "completed").length;
+    const progress = totalFeatures > 0 ? (completedFeatures / totalFeatures) * 100 : 0;
+
+    // Calculate milestone progress
+    const totalMilestones = milestones.length;
+    const completedMilestones = milestones.filter(m => m.status === "completed").length;
+    const milestoneProgress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
+
+    // Group features by milestone
+    const featuresByMilestone: Record<string, any[]> = {};
+    const unassignedFeatures: any[] = [];
+
+    features.forEach(feature => {
+      if (feature.milestoneId) {
+        if (!featuresByMilestone[feature.milestoneId]) {
+          featuresByMilestone[feature.milestoneId] = [];
+        }
+        featuresByMilestone[feature.milestoneId].push(feature);
+      } else {
+        unassignedFeatures.push(feature);
+      }
+    });
+
+    // Add feature details to milestones
+    const milestonesWithFeatures = milestones.map(milestone => ({
+      ...milestone,
+      features: featuresByMilestone[milestone._id] || [],
+      featureCount: (featuresByMilestone[milestone._id] || []).length,
+      completedFeatureCount: (featuresByMilestone[milestone._id] || []).filter(f => f.status === "completed").length,
+    }));
+
+    return {
+      roadmap,
+      milestones: milestonesWithFeatures,
+      features,
+      unassignedFeatures,
+      activities,
+      metrics: {
+        totalFeatures,
+        completedFeatures,
+        progress: Math.round(progress * 100) / 100,
+        totalMilestones,
+        completedMilestones,
+        milestoneProgress: Math.round(milestoneProgress * 100) / 100,
+      }
+    };
+  },
+});
+
+// Enhanced get feature dependencies with access control
+export const getFeatureDependenciesEnhanced = query({
+  args: { 
+    roadmapId: v.id("roadmaps"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return null;
+    }
+
+    // Verify roadmap access
+    const roadmap = await ctx.db.get(args.roadmapId);
+    if (!roadmap || roadmap.userId !== args.userId) {
+      return null;
+    }
+
+    // Get all features for this roadmap
+    const features = await ctx.db
+      .query("features")
+      .withIndex("by_roadmap_id", (q) => q.eq("roadmapId", args.roadmapId))
+      .collect();
+
+    // Build dependency graph
+    const dependencyGraph = features.map(feature => {
+      const dependencies = feature.dependencies || [];
+      const dependents = features.filter(f => 
+        f.dependencies && f.dependencies.includes(feature._id)
+      );
+
+      return {
+        ...feature,
+        dependencyDetails: dependencies.map(depId => 
+          features.find(f => f._id === depId)
+        ).filter(Boolean),
+        dependents: dependents.map(dep => ({
+          _id: dep._id,
+          name: dep.name,
+          status: dep.status,
+        })),
+        isBlocked: dependencies.some(depId => {
+          const dep = features.find(f => f._id === depId);
+          return dep && dep.status !== "completed";
+        }),
+        canStart: dependencies.every(depId => {
+          const dep = features.find(f => f._id === depId);
+          return dep && dep.status === "completed";
+        }),
+      };
+    });
+
+    // Find critical path (features with most dependents)
+    const criticalFeatures = dependencyGraph
+      .filter(f => f.dependents.length > 0)
+      .sort((a, b) => b.dependents.length - a.dependents.length)
+      .slice(0, 5);
+
+    // Find blocked features
+    const blockedFeatures = dependencyGraph.filter(f => f.isBlocked);
+
+    // Find ready features (can start now)
+    const readyFeatures = dependencyGraph.filter(f => 
+      f.canStart && f.status === "planned"
+    );
+
+    return {
+      roadmap,
+      features: dependencyGraph,
+      criticalFeatures,
+      blockedFeatures,
+      readyFeatures,
+      metrics: {
+        totalFeatures: features.length,
+        featuresWithDependencies: dependencyGraph.filter(f => f.dependencies && f.dependencies.length > 0).length,
+        blockedFeatures: blockedFeatures.length,
+        readyFeatures: readyFeatures.length,
+      }
     };
   },
 });
@@ -469,4 +750,3 @@ function generateHealthRecommendations(metrics: any, healthStatus: string): stri
 
   return recommendations;
 }
-

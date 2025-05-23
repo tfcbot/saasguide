@@ -24,6 +24,71 @@ export const createMilestone = mutation({
   },
 });
 
+// Enhanced create milestone with authentication and activity logging
+export const createMilestoneEnhanced = mutation({
+  args: {
+    name: v.string(),
+    description: v.optional(v.string()),
+    roadmapId: v.id("roadmaps"),
+    projectId: v.id("projects"),
+    userId: v.id("users"),
+    date: v.number(),
+    status: v.string(),
+    color: v.optional(v.string()),
+    order: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Verify roadmap exists and user has access
+    const roadmap = await ctx.db.get(args.roadmapId);
+    if (!roadmap || roadmap.userId !== args.userId) {
+      throw new Error("Roadmap not found or access denied");
+    }
+    
+    // Verify project exists and user has access
+    const project = await ctx.db.get(args.projectId);
+    if (!project || project.userId !== args.userId) {
+      throw new Error("Project not found or access denied");
+    }
+    
+    const now = Date.now();
+    const milestoneId = await ctx.db.insert("milestones", {
+      name: args.name,
+      description: args.description,
+      roadmapId: args.roadmapId,
+      projectId: args.projectId,
+      userId: args.userId,
+      date: args.date,
+      status: args.status,
+      color: args.color,
+      order: args.order,
+      createdAt: now,
+      updatedAt: now,
+    });
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "milestone.created",
+      description: `Created milestone "${args.name}" for roadmap "${roadmap.name}"`,
+      userId: args.userId,
+      entityType: "milestone",
+      entityId: milestoneId,
+      metadata: {
+        roadmapId: args.roadmapId,
+        projectId: args.projectId,
+      },
+      createdAt: now,
+    });
+    
+    return milestoneId;
+  },
+});
+
 // Get all milestones for a roadmap
 export const getMilestonesByRoadmap = query({
   args: { roadmapId: v.id("roadmaps") },
@@ -92,11 +157,134 @@ export const updateMilestone = mutation({
   },
 });
 
+// Enhanced update milestone with activity logging and access control
+export const updateMilestoneEnhanced = mutation({
+  args: {
+    milestoneId: v.id("milestones"),
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    date: v.optional(v.number()),
+    status: v.optional(v.string()),
+    color: v.optional(v.string()),
+    order: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the milestone and verify access
+    const milestone = await ctx.db.get(args.milestoneId);
+    if (!milestone) {
+      throw new Error("Milestone not found");
+    }
+    
+    if (milestone.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    const { milestoneId, userId, ...updates } = args;
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    
+    const result = await ctx.db.patch(milestoneId, {
+      ...filteredUpdates,
+      updatedAt: Date.now(),
+    });
+    
+    // Log activity based on what changed
+    let activityType = "milestone.updated";
+    let description = `Updated milestone "${milestone.name}"`;
+    
+    if (args.status && args.status !== milestone.status) {
+      activityType = "milestone.status_changed";
+      description = `Changed milestone "${milestone.name}" status from ${milestone.status} to ${args.status}`;
+    }
+    
+    await ctx.db.insert("activities", {
+      type: activityType,
+      description,
+      userId: args.userId,
+      entityType: "milestone",
+      entityId: milestoneId,
+      metadata: {
+        roadmapId: milestone.roadmapId,
+        projectId: milestone.projectId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
+  },
+});
+
 // Delete a milestone
 export const deleteMilestone = mutation({
   args: { milestoneId: v.id("milestones") },
   handler: async (ctx, args) => {
     return await ctx.db.delete(args.milestoneId);
+  },
+});
+
+// Enhanced delete milestone with activity logging and access control
+export const deleteMilestoneEnhanced = mutation({
+  args: { 
+    milestoneId: v.id("milestones"),
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    // Verify user exists
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Get the milestone and verify access
+    const milestone = await ctx.db.get(args.milestoneId);
+    if (!milestone) {
+      throw new Error("Milestone not found");
+    }
+    
+    if (milestone.userId !== args.userId) {
+      throw new Error("Access denied");
+    }
+    
+    // Update all features in this milestone to remove milestone reference
+    const features = await ctx.db
+      .query("features")
+      .withIndex("by_milestone_id", (q) => q.eq("milestoneId", args.milestoneId))
+      .collect();
+    
+    for (const feature of features) {
+      await ctx.db.patch(feature._id, {
+        milestoneId: undefined,
+        updatedAt: Date.now(),
+      });
+    }
+    
+    // Delete the milestone
+    const result = await ctx.db.delete(args.milestoneId);
+    
+    // Log activity
+    await ctx.db.insert("activities", {
+      type: "milestone.deleted",
+      description: `Deleted milestone "${milestone.name}"`,
+      userId: args.userId,
+      entityType: "milestone",
+      entityId: args.milestoneId,
+      metadata: {
+        milestoneId: args.milestoneId,
+        roadmapId: milestone.roadmapId,
+        projectId: milestone.projectId,
+      },
+      createdAt: Date.now(),
+    });
+    
+    return result;
   },
 });
 
@@ -253,4 +441,3 @@ export const getMilestoneStats = query({
     };
   },
 });
-
