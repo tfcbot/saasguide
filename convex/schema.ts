@@ -319,4 +319,22 @@ export default defineSchema({
   }).index("by_user_id", ["userId"])
     .index("unread_notifications", ["userId", "read"])
     .index("recent_notifications", ["createdAt"]),
+
+  // AI Insights data model
+  insights: defineTable({
+    title: v.string(),
+    description: v.string(),
+    category: v.union(
+      v.literal("performance"),
+      v.literal("opportunity"), 
+      v.literal("suggestion"),
+      v.literal("trend")
+    ),
+    priority: v.number(),
+    userId: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"])
+    .index("by_priority", ["priority"])
+    .index("by_category", ["category"]),
 });
