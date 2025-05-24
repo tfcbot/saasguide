@@ -21,15 +21,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-type Insight = {
-  _id: string
-  title: string
-  description: string
-  category: "performance" | "opportunity" | "suggestion" | "trend"
-  priority: number
-  createdAt: number
-  userId: string
-}
 
 export function AIInsights() {
   const { user } = useUser()
@@ -82,7 +73,7 @@ export function AIInsights() {
     try {
       await generateInsights({ userId: user.id })
       toast.success("Insights refreshed successfully!")
-    } catch (error) {
+    } catch {
       toast.error("Failed to refresh insights")
     } finally {
       setIsRefreshing(false)

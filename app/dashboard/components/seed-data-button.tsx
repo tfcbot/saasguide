@@ -20,7 +20,7 @@ export function SeedDataButton() {
     try {
       await seedDatabase({})
       toast.success("Sample data loaded successfully!")
-    } catch (error) {
+    } catch {
       toast.error("Failed to load sample data")
     } finally {
       setIsLoading(false)
