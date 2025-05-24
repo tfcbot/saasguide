@@ -1,6 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
+import { useUser } from "@clerk/nextjs"
+import { toast } from "sonner"
 import { 
   BarChart3, 
   Calendar, 
@@ -19,7 +24,8 @@ import {
   Target, 
   Trash, 
   TrendingUp, 
-  Users
+  Users,
+  Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,21 +34,6 @@ import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-
-type Campaign = {
-  id: string
-  name: string
-  type: "email" | "social" | "content" | "ads" | "event"
-  status: "active" | "draft" | "completed" | "scheduled"
-  startDate: string
-  endDate?: string
-  budget?: number
-  spent?: number
-  leads: number
-  conversions: number
-  roi?: number
-  description: string
-}
 
 type CampaignTemplate = {
   id: string
@@ -55,76 +46,150 @@ type CampaignTemplate = {
 }
 
 export function MarketingCampaigns() {
+  const { user } = useUser()
   const [searchQuery, setSearchQuery] = useState("")
   
-  const campaigns: Campaign[] = [
-    {
-      id: "1",
-      name: "Q2 Email Newsletter",
-      type: "email",
-      status: "active",
-      startDate: "2025-04-15",
-      endDate: "2025-06-30",
-      budget: 1200,
-      spent: 450,
-      leads: 342,
-      conversions: 28,
-      roi: 2.4,
-      description: "Quarterly newsletter highlighting new features and customer success stories."
-    },
-    {
-      id: "2",
-      name: "Product Launch Social Campaign",
-      type: "social",
-      status: "active",
-      startDate: "2025-05-10",
-      endDate: "2025-06-10",
-      budget: 3500,
-      spent: 1200,
-      leads: 520,
-      conversions: 45,
-      roi: 3.2,
-      description: "Social media campaign for the new AI feature launch."
-    },
-    {
-      id: "3",
-      name: "Summer Webinar Series",
-      type: "event",
-      status: "scheduled",
-      startDate: "2025-06-15",
-      endDate: "2025-08-15",
-      budget: 2000,
-      spent: 0,
-      leads: 0,
-      conversions: 0,
-      description: "Series of educational webinars showcasing advanced use cases."
-    },
-    {
-      id: "4",
-      name: "SEO Content Strategy",
-      type: "content",
-      status: "draft",
-      startDate: "2025-07-01",
-      leads: 0,
-      conversions: 0,
-      description: "Comprehensive content strategy to improve organic search rankings."
-    },
-    {
-      id: "5",
-      name: "Spring Promotion",
-      type: "ads",
-      status: "completed",
-      startDate: "2025-03-01",
-      endDate: "2025-04-15",
-      budget: 5000,
-      spent: 5000,
-      leads: 830,
-      conversions: 76,
-      roi: 4.1,
-      description: "Paid advertising campaign for spring promotion."
-    }
-  ]
+  // Fetch real campaign data from Convex
+  const campaigns = useQuery(
+    api.marketingCampaigns.getMarketingCampaignsByUser,
+    user?.id ? { userId: user.id as Id<"users"> } : "skip"
+  )
+  
+  const createCampaign = useMutation(api.marketingCampaigns.createMarketingCampaign)
+  const deleteCampaign = useMutation(api.marketingCampaigns.deleteMarketingCampaign)
+  
+  // Loading state
+  if (campaigns === undefined) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Marketing Campaigns</h2>
+            <p className="text-muted-foreground">Create and manage marketing campaigns for your agentic SaaS</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" disabled>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Loading...
+            </Button>
+          </div>
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-muted rounded w-1/2"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-6 bg-muted rounded w-1/2 mb-4"></div>
+                <div className="h-2 bg-muted rounded w-full"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+  
+  // Empty state
+  if (campaigns?.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Marketing Campaigns</h2>
+            <p className="text-muted-foreground">Create and manage marketing campaigns for your agentic SaaS</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline">Export Data</Button>
+            <Button>Create Campaign</Button>
+          </div>
+        </div>
+        
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No campaigns yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Start by creating your first marketing campaign to track performance and manage activities.
+            </p>
+            <Button>Create Campaign</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
+  // Handle add campaign
+  const handleAddCampaign = async (campaignData: {
+    name: string
+    type: string
+    description: string
+    budget?: number
+    startDate: string
+    endDate?: string
+  }) => {
+    if (!user?.id) return
+    
+    try {
+      await createCampaign({
+        name: campaignData.name,
+        description: campaignData.description,
+        userId: user.id as Id<"users">,
+        type: campaignData.type,
+        goal: "lead_generation", // Default goal
+        status: "draft",
+        budget: campaignData.budget,
+        startDate: campaignData.startDate ? new Date(campaignData.startDate).getTime() : undefined,
+        endDate: campaignData.endDate ? new Date(campaignData.endDate).getTime() : undefined,
+      })
+      toast.success("Campaign created successfully!")
+    } catch {
+      toast.error("Failed to create campaign")
+    }
+  }
+  
+  // Handle delete campaign
+  const handleDeleteCampaign = async (campaignId: string) => {
+    try {
+      await deleteCampaign({ campaignId: campaignId as Id<"marketingCampaigns"> })
+      toast.success("Campaign deleted successfully!")
+    } catch {
+      toast.error("Failed to delete campaign")
+    }
+  }
+
+  // Filter campaigns based on search
+  const filteredCampaigns = campaigns?.filter(campaign =>
+    campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    campaign.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || []
+
+  // Calculate campaign metrics from real data
+  const activeCampaigns = filteredCampaigns.filter(campaign => campaign.status === "active")
+  const draftCampaigns = filteredCampaigns.filter(campaign => campaign.status === "draft")
+  const completedCampaigns = filteredCampaigns.filter(campaign => campaign.status === "completed")
+  const scheduledCampaigns = filteredCampaigns.filter(campaign => campaign.status === "scheduled")
+  
+  const totalBudget = filteredCampaigns.reduce((sum, campaign) => sum + (campaign.budget || 0), 0)
+  const totalSpent = 0 // TODO: Calculate from campaign metrics when available
+  const totalLeads = 0 // TODO: Calculate from campaign metrics when available
+  const totalConversions = 0 // TODO: Calculate from campaign metrics when available
+  
+  const conversionRate = totalLeads > 0 ? (totalConversions / totalLeads) * 100 : 0
+  const budgetUtilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0
+
+  // Static templates for now
   const templates: CampaignTemplate[] = [
     {
       id: "t1",
@@ -173,20 +238,7 @@ export function MarketingCampaigns() {
     }
   ]
 
-  const activeCampaigns = campaigns.filter(campaign => campaign.status === "active")
-  const draftCampaigns = campaigns.filter(campaign => campaign.status === "draft")
-  const completedCampaigns = campaigns.filter(campaign => campaign.status === "completed")
-  const scheduledCampaigns = campaigns.filter(campaign => campaign.status === "scheduled")
-  
-  const totalBudget = campaigns.reduce((sum, campaign) => sum + (campaign.budget || 0), 0)
-  const totalSpent = campaigns.reduce((sum, campaign) => sum + (campaign.spent || 0), 0)
-  const totalLeads = campaigns.reduce((sum, campaign) => sum + campaign.leads, 0)
-  const totalConversions = campaigns.reduce((sum, campaign) => sum + campaign.conversions, 0)
-  
-  const conversionRate = totalLeads > 0 ? (totalConversions / totalLeads) * 100 : 0
-  const budgetUtilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0
-
-  const getCampaignTypeColor = (type: Campaign["type"]) => {
+  const getCampaignTypeColor = (type: string) => {
     switch (type) {
       case "email": return "bg-blue-100 text-blue-600"
       case "social": return "bg-purple-100 text-purple-600"
@@ -197,7 +249,7 @@ export function MarketingCampaigns() {
     }
   }
 
-  const getCampaignTypeIcon = (type: Campaign["type"]) => {
+  const getCampaignTypeIcon = (type: string) => {
     switch (type) {
       case "email": return <Mail className="h-4 w-4" />
       case "social": return <Share2 className="h-4 w-4" />
@@ -208,7 +260,7 @@ export function MarketingCampaigns() {
     }
   }
 
-  const getCampaignStatusColor = (status: Campaign["status"]) => {
+  const getCampaignStatusColor = (status: string) => {
     switch (status) {
       case "active": return "bg-green-100 text-green-600"
       case "draft": return "bg-gray-100 text-gray-600"
@@ -227,8 +279,22 @@ export function MarketingCampaigns() {
     }
   }
 
-  const renderCampaignCard = (campaign: Campaign) => (
-    <Card key={campaign.id} className="overflow-hidden">
+  const formatDate = (timestamp?: number) => {
+    if (!timestamp) return "No date set"
+    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  const renderCampaignCard = (campaign: {
+    _id: string
+    name: string
+    type: string
+    status: string
+    description?: string
+    startDate?: number
+    endDate?: number
+    budget?: number
+  }) => (
+    <Card key={campaign._id} className="overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div>
@@ -260,14 +326,17 @@ export function MarketingCampaigns() {
                 <Copy className="mr-2 h-4 w-4" /> Duplicate
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-red-600">
+              <DropdownMenuItem 
+                className="cursor-pointer text-red-600"
+                onClick={() => handleDeleteCampaign(campaign._id)}
+              >
                 <Trash className="mr-2 h-4 w-4" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <CardDescription className="line-clamp-2 mt-1">
-          {campaign.description}
+          {campaign.description || "No description provided"}
         </CardDescription>
       </CardHeader>
       <CardContent className="pb-3">
@@ -275,8 +344,8 @@ export function MarketingCampaigns() {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Timeline:</span>
             <span className="font-medium">
-              {new Date(campaign.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              {campaign.endDate ? ` - ${new Date(campaign.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ' (No end date)'}
+              {formatDate(campaign.startDate)}
+              {campaign.endDate ? ` - ${formatDate(campaign.endDate)}` : ' (No end date)'}
             </span>
           </div>
           
@@ -288,14 +357,11 @@ export function MarketingCampaigns() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Spent:</span>
-                <span className="font-medium">${campaign.spent?.toLocaleString() || 0}</span>
+                <span className="font-medium">$0</span>
               </div>
-              <Progress 
-                value={campaign.spent ? (campaign.spent / campaign.budget) * 100 : 0} 
-                className="h-2"
-              />
+              <Progress value={0} className="h-2" />
               <p className="text-xs text-muted-foreground text-right">
-                {campaign.spent ? Math.round((campaign.spent / campaign.budget) * 100) : 0}% of budget used
+                0% of budget used
               </p>
             </div>
           )}
@@ -306,14 +372,14 @@ export function MarketingCampaigns() {
                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>Leads</span>
               </div>
-              <p className="text-2xl font-bold">{campaign.leads}</p>
+              <p className="text-2xl font-bold">0</p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1 text-sm font-medium">
                 <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>Conversions</span>
               </div>
-              <p className="text-2xl font-bold">{campaign.conversions}</p>
+              <p className="text-2xl font-bold">0</p>
             </div>
           </div>
         </div>
@@ -388,7 +454,12 @@ export function MarketingCampaigns() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline">Export Data</Button>
-          <Button>Create Campaign</Button>
+          <Button onClick={() => handleAddCampaign({
+            name: "New Campaign",
+            type: "email",
+            description: "Sample campaign description",
+            startDate: new Date().toISOString().split('T')[0]
+          })}>Create Campaign</Button>
         </div>
       </div>
 
@@ -400,8 +471,8 @@ export function MarketingCampaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeCampaigns.length}</div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              You don&apos;t have any active campaigns. Create a new campaign to get started.
+            <p className="text-xs text-muted-foreground mt-2">
+              {activeCampaigns.length === 0 ? "No active campaigns" : `${activeCampaigns.length} running`}
             </p>
           </CardContent>
         </Card>
@@ -428,7 +499,7 @@ export function MarketingCampaigns() {
           <CardContent>
             <div className="text-2xl font-bold">{totalLeads.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-2">
-              From {campaigns.length} campaigns
+              From {filteredCampaigns.length} campaigns
             </p>
           </CardContent>
         </Card>
@@ -495,7 +566,12 @@ export function MarketingCampaigns() {
               <p className="mt-2 text-sm text-muted-foreground">
                 You don&apos;t have any active campaigns. Create a new campaign to get started.
               </p>
-              <Button className="mt-4">Create Campaign</Button>
+              <Button className="mt-4" onClick={() => handleAddCampaign({
+                name: "New Campaign",
+                type: "email",
+                description: "Sample campaign description",
+                startDate: new Date().toISOString().split('T')[0]
+              })}>Create Campaign</Button>
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
