@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 
 // Helper function to get user by Clerk ID
 async function getUserByClerkId(ctx: any, clerkId: string) {
@@ -114,28 +114,215 @@ async function getNextSteps(ctx: any, userId: string) {
 }
 
 // Get AI insights function
-async function getAIInsights(ctx: any, userId: string) {
-  // This would typically involve more complex logic or integration with an AI service
-  // For now, we'll return static insights
-  
-  return [
-    {
-      type: "development",
-      title: "Development Insight",
-      content: "Based on your current progress, consider implementing a more robust error handling system for your agentic features. This will improve reliability and user experience.",
-    },
-    {
-      type: "marketing",
-      title: "Marketing Insight",
-      content: "Your target audience shows high engagement with educational content about AI agents. Consider creating a blog series explaining how your agentic features solve specific problems.",
-    },
-    {
-      type: "sales",
-      title: "Sales Insight",
-      content: "Early adopters are showing interest in your agent customization features. Highlight this in your sales pitches and consider offering a limited-time promotion for early access.",
-    },
-  ];
-}
+export const getAIInsights = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    // Get user by Clerk ID
+    const user = await getUserByClerkId(ctx, args.userId);
+    if (!user) {
+      return [];
+    }
+
+    // Get AI insights - now using the new query function
+    const aiInsights = await ctx.db
+      .query("insights")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(10);
+    
+    return aiInsights;
+  },
+});
+
+export const generateAIInsights = mutation({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    // Get user by Clerk ID
+    const user = await getUserByClerkId(ctx, args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Clear old insights
+    const oldInsights = await ctx.db
+      .query("insights")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    
+    for (const insight of oldInsights) {
+      await ctx.db.delete(insight._id);
+    }
+    
+    // Get user data for analysis
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .collect();
+    
+    const customers = await ctx.db
+      .query("customers")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .collect();
+    
+    const campaigns = await ctx.db
+      .query("marketingCampaigns")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .collect();
+    
+    const deals = await ctx.db
+      .query("deals")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .collect();
+    
+    const now = Date.now();
+    const insights = [];
+    
+    // Generate performance insights
+    if (projects.length > 0) {
+      const avgProgress = projects.reduce((acc, p) => acc + (p.progress || 0), 0) / projects.length;
+      if (avgProgress > 0.7) {
+        insights.push({
+          title: "Strong Development Progress",
+          description: `Your projects are ${Math.round(avgProgress * 100)}% complete on average. Keep up the excellent momentum!`,
+          category: "performance" as const,
+          priority: 8,
+          userId: user._id,
+          createdAt: now,
+          updatedAt: now,
+        });
+      } else if (avgProgress < 0.3) {
+        insights.push({
+          title: "Development Acceleration Needed",
+          description: `Your projects are ${Math.round(avgProgress * 100)}% complete on average. Consider breaking down tasks into smaller chunks to maintain momentum.`,
+          category: "suggestion" as const,
+          priority: 7,
+          userId: user._id,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+    
+    // Generate opportunity insights
+    if (customers.length > 0) {
+      const leadCount = customers.filter(c => c.status === "lead").length;
+      const prospectCount = customers.filter(c => c.status === "prospect").length;
+      const customerCount = customers.filter(c => c.status === "customer").length;
+      
+      if (leadCount > prospectCount * 2) {
+        insights.push({
+          title: "Lead Conversion Opportunity",
+          description: `You have ${leadCount} leads but only ${prospectCount} prospects. Consider nurturing more leads into the sales pipeline.`,
+          category: "opportunity" as const,
+          priority: 7,
+          userId: user._id,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+
+      if (customerCount > 0 && campaigns.length === 0) {
+        insights.push({
+          title: "Customer Retention Campaign",
+          description: `With ${customerCount} existing customers, consider launching retention campaigns to increase lifetime value.`,
+          category: "opportunity" as const,
+          priority: 6,
+          userId: user._id,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+    
+    // Generate suggestion insights
+    if (campaigns.length === 0 && customers.length > 5) {
+      insights.push({
+        title: "Marketing Campaign Suggestion",
+        description: "With your growing customer base, consider launching a marketing campaign to accelerate growth and engagement.",
+        category: "suggestion" as const,
+        priority: 6,
+        userId: user._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    if (deals.length > 0) {
+      const openDeals = deals.filter(d => !["closed-won", "closed-lost"].includes(d.stage));
+      const avgDealValue = deals.reduce((sum, d) => sum + (d.value || 0), 0) / deals.length;
+      
+      if (openDeals.length > 3 && avgDealValue > 1000) {
+        insights.push({
+          title: "Sales Process Optimization",
+          description: `You have ${openDeals.length} open deals with an average value of $${Math.round(avgDealValue)}. Consider implementing a more structured follow-up process.`,
+          category: "suggestion" as const,
+          priority: 5,
+          userId: user._id,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+    
+    // Generate trend insights
+    if (projects.length > 0 && campaigns.length > 0) {
+      insights.push({
+        title: "Balanced Growth Trend",
+        description: "You're maintaining a good balance between product development and marketing efforts. This integrated approach often leads to sustainable growth.",
+        category: "trend" as const,
+        priority: 5,
+        userId: user._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    if (customers.length > 10) {
+      const recentCustomers = customers.filter(c => c.createdAt > now - (30 * 24 * 60 * 60 * 1000)); // Last 30 days
+      if (recentCustomers.length > customers.length * 0.3) {
+        insights.push({
+          title: "Customer Growth Acceleration",
+          description: `You've acquired ${recentCustomers.length} new customers in the last 30 days, representing ${Math.round((recentCustomers.length / customers.length) * 100)}% growth. This indicates strong market traction.`,
+          category: "trend" as const,
+          priority: 8,
+          userId: user._id,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    // Add default insights if no data available
+    if (insights.length === 0) {
+      insights.push({
+        title: "Getting Started",
+        description: "Welcome to SaaSGuide! Start by creating your first project to begin tracking your development progress.",
+        category: "suggestion" as const,
+        priority: 9,
+        userId: user._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      insights.push({
+        title: "Build Your Customer Base",
+        description: "Add your first customers to start tracking sales opportunities and building relationships.",
+        category: "opportunity" as const,
+        priority: 8,
+        userId: user._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    
+    // Insert new insights
+    for (const insight of insights) {
+      await ctx.db.insert("insights", insight);
+    }
+    
+    return insights.length;
+  },
+});
 
 // Get dashboard overview function
 export const getDashboardOverview = query({
@@ -202,8 +389,12 @@ export const getDashboardOverview = query({
     // Get next steps
     const nextSteps = await getNextSteps(ctx, user._id);
     
-    // Get AI insights
-    const aiInsights = await getAIInsights(ctx, user._id);
+    // Get AI insights - now using the new query function
+    const aiInsights = await ctx.db
+      .query("insights")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(3);
     
     return {
       metrics: {
@@ -382,7 +573,11 @@ export const getAIInsightsData = query({
       return null;
     }
 
-    return await getAIInsights(ctx, user._id);
+    return await ctx.db
+      .query("insights")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(10);
   },
 });
 
@@ -473,7 +668,11 @@ export const getDashboardData = query({
 
     // Include AI insights if requested
     if (args.includeInsights !== false) {
-      result.aiInsights = await getAIInsights(ctx, user._id);
+      result.aiInsights = await ctx.db
+        .query("insights")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .order("desc")
+        .take(10);
     }
 
     return result;
