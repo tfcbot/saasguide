@@ -1,17 +1,20 @@
 "use client"
 
 import { useState } from "react"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
+import { useUser } from "@clerk/nextjs"
+import { toast } from "sonner"
 import { 
   ArrowUpRight, 
   ChevronDown, 
   ChevronRight, 
-  Code, 
   FileCode, 
-  FileText, 
   Lightbulb, 
+  Plus,
   Rocket, 
   Server, 
-  Settings, 
   Sparkles, 
   Users 
 } from "lucide-react"
@@ -26,22 +29,105 @@ import {
 } from "@/components/ui/collapsible"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
-type DevelopmentPhase = {
-  id: string
-  name: string
-  description: string
-  progress: number
-  icon: React.ReactNode
-  tasks: DevelopmentTask[]
+interface AddProjectDialogProps {
+  onAddProject: (data: {
+    name: string
+    description: string
+    startDate: string
+    endDate: string
+  }) => void
 }
 
-type DevelopmentTask = {
-  id: string
-  title: string
-  description: string
-  completed: boolean
+function AddProjectDialog({ onAddProject }: AddProjectDialogProps) {
+  const [open, setOpen] = useState(false)
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    startDate: "",
+    endDate: ""
+  })
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onAddProject(formData)
+    setFormData({
+      name: "",
+      description: "",
+      startDate: "",
+      endDate: ""
+    })
+    setOpen(false)
+  }
+  
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Project
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+            <DialogDescription>
+              Add a new development project to track its progress.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Project Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit">Create Project</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
 }
+
 
 type LifecycleStage = {
   id: string
@@ -50,180 +136,6 @@ type LifecycleStage = {
   icon: React.ReactNode
   tips: string[]
 }
-
-const developmentPhases: DevelopmentPhase[] = [
-  {
-    id: "planning",
-    name: "Planning & Research",
-    description: "Define your agentic SaaS concept and research the market",
-    progress: 100,
-    icon: <Lightbulb className="h-5 w-5" />,
-    tasks: [
-      {
-        id: "p1",
-        title: "Define core agentic SaaS concept",
-        description: "Clearly articulate what problem your agentic SaaS will solve",
-        completed: true
-      },
-      {
-        id: "p2",
-        title: "Conduct market research",
-        description: "Analyze competitors and identify market opportunities",
-        completed: true
-      },
-      {
-        id: "p3",
-        title: "Create user personas",
-        description: "Define target users and their needs",
-        completed: true
-      },
-      {
-        id: "p4",
-        title: "Draft initial requirements",
-        description: "Document core features and functionality",
-        completed: true
-      }
-    ]
-  },
-  {
-    id: "design",
-    name: "Design & Architecture",
-    description: "Design the user experience and technical architecture",
-    progress: 85,
-    icon: <FileText className="h-5 w-5" />,
-    tasks: [
-      {
-        id: "d1",
-        title: "Create wireframes",
-        description: "Design the basic layout and user flow",
-        completed: true
-      },
-      {
-        id: "d2",
-        title: "Design UI mockups",
-        description: "Create detailed visual designs for key screens",
-        completed: true
-      },
-      {
-        id: "d3",
-        title: "Define technical architecture",
-        description: "Plan the technical stack and system architecture",
-        completed: true
-      },
-      {
-        id: "d4",
-        title: "Design database schema",
-        description: "Define data models and relationships",
-        completed: false
-      }
-    ]
-  },
-  {
-    id: "development",
-    name: "Development & Implementation",
-    description: "Build the core functionality of your agentic SaaS",
-    progress: 60,
-    icon: <Code className="h-5 w-5" />,
-    tasks: [
-      {
-        id: "dev1",
-        title: "Set up development environment",
-        description: "Configure tools, repositories, and CI/CD pipelines",
-        completed: true
-      },
-      {
-        id: "dev2",
-        title: "Implement authentication system",
-        description: "Build user authentication and authorization",
-        completed: true
-      },
-      {
-        id: "dev3",
-        title: "Develop core AI agent functionality",
-        description: "Implement the core agentic capabilities",
-        completed: true
-      },
-      {
-        id: "dev4",
-        title: "Build user dashboard",
-        description: "Create the main user interface and dashboard",
-        completed: false
-      },
-      {
-        id: "dev5",
-        title: "Implement API endpoints",
-        description: "Create necessary API endpoints for frontend-backend communication",
-        completed: false
-      }
-    ]
-  },
-  {
-    id: "testing",
-    name: "Testing & Quality Assurance",
-    description: "Ensure your agentic SaaS works correctly and reliably",
-    progress: 30,
-    icon: <Settings className="h-5 w-5" />,
-    tasks: [
-      {
-        id: "t1",
-        title: "Write unit tests",
-        description: "Create tests for individual components and functions",
-        completed: true
-      },
-      {
-        id: "t2",
-        title: "Perform integration testing",
-        description: "Test how components work together",
-        completed: false
-      },
-      {
-        id: "t3",
-        title: "Conduct user acceptance testing",
-        description: "Get feedback from real users",
-        completed: false
-      },
-      {
-        id: "t4",
-        title: "Test performance and scalability",
-        description: "Ensure the system can handle expected load",
-        completed: false
-      }
-    ]
-  },
-  {
-    id: "deployment",
-    name: "Deployment & Launch",
-    description: "Deploy your agentic SaaS and prepare for launch",
-    progress: 10,
-    icon: <Rocket className="h-5 w-5" />,
-    tasks: [
-      {
-        id: "dep1",
-        title: "Set up production environment",
-        description: "Configure servers, databases, and infrastructure",
-        completed: true
-      },
-      {
-        id: "dep2",
-        title: "Implement monitoring and logging",
-        description: "Set up tools to track system performance and issues",
-        completed: false
-      },
-      {
-        id: "dep3",
-        title: "Create deployment pipeline",
-        description: "Automate the deployment process",
-        completed: false
-      },
-      {
-        id: "dep4",
-        title: "Prepare launch materials",
-        description: "Create documentation, marketing materials, and support resources",
-        completed: false
-      }
-    ]
-  }
-]
 
 const lifecycleStages: LifecycleStage[] = [
   {
@@ -293,13 +205,101 @@ const lifecycleStages: LifecycleStage[] = [
 ]
 
 export function DevelopmentTracker() {
+  const { user } = useUser()
   const [openPhase, setOpenPhase] = useState<string>("planning")
   
+  // Replace static data with Convex queries
+  const projects = useQuery(
+    api.projects.getProjectsByUser,
+    user?.id ? { userId: user.id as Id<"users"> } : "skip"
+  )
+  
+  const developmentPhases = useQuery(
+    api.developmentPhases.getPhasesByProjectEnhanced,
+    projects && projects.length > 0 && user?.id ? { 
+      projectId: projects[0]._id, 
+      userId: user.id as Id<"users"> 
+    } : "skip"
+  )
+  
+  const projectTasks = useQuery(
+    api.tasks.getTasksByProject,
+    projects && projects.length > 0 ? { projectId: projects[0]._id } : "skip"
+  )
+  
+  const updateTask = useMutation(api.tasks.updateTask)
+  const createProject = useMutation(api.projects.createProject)
+  
+  // Group tasks by phase
+  const getTasksForPhase = (phaseId: string) => {
+    if (!projectTasks) return []
+    return projectTasks.filter(task => task.phaseId === phaseId)
+  }
+  
+  // Loading state
+  if (projects === undefined) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Development Tracker</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-2 bg-muted rounded w-full mb-4"></div>
+                <div className="h-8 bg-muted rounded w-1/2"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+  
+  // Handle task completion toggle
+  const handleTaskToggle = async (taskId: string, completed: boolean) => {
+    try {
+      await updateTask({
+        taskId: taskId as Id<"tasks">,
+        status: !completed ? "completed" : "pending",
+        completedAt: !completed ? Date.now() : undefined
+      })
+      toast.success(`Task ${!completed ? 'completed' : 'reopened'}!`)
+    } catch {
+      toast.error("Failed to update task")
+    }
+  }
+  
+  // Handle add project
+  const handleAddProject = async (projectData: {
+    name: string
+    description: string
+    startDate: string
+    endDate: string
+  }) => {
+    if (!user?.id) return
+    
+    try {
+      await createProject({
+        ...projectData,
+        userId: user.id as Id<"users">,
+        status: "planning",
+        progress: 0,
+        startDate: new Date(projectData.startDate).getTime(),
+        endDate: new Date(projectData.endDate).getTime(),
+      })
+      toast.success("Project created successfully!")
+    } catch {
+      toast.error("Failed to create project")
+    }
+  }
+  
   // Calculate overall progress
-  const totalTasks = developmentPhases.reduce((acc, phase) => acc + phase.tasks.length, 0)
-  const completedTasks = developmentPhases.reduce((acc, phase) => 
-    acc + phase.tasks.filter(task => task.completed).length, 0)
-  const overallProgress = Math.round((completedTasks / totalTasks) * 100)
+  const overallProgress = projects?.length > 0 
+    ? projects.reduce((acc, project) => acc + (project.progress || 0), 0) / projects.length
+    : 0
 
   const togglePhase = (phaseId: string) => {
     setOpenPhase(openPhase === phaseId ? "" : phaseId)
@@ -307,147 +307,217 @@ export function DevelopmentTracker() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Development Tracker</h2>
-          <p className="text-muted-foreground">Track and manage your agentic SaaS development lifecycle</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">Export Checklist</Button>
-          <Button>Add Custom Task</Button>
-        </div>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Development Tracker</h2>
+        <AddProjectDialog onAddProject={handleAddProject} />
       </div>
 
+      {/* Overall Progress Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Development Progress</CardTitle>
-          <CardDescription>Overall progress across all development phases</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Rocket className="h-5 w-5" />
+            Overall Development Progress
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <div className="font-medium">Overall Progress</div>
-                <div>{overallProgress}%</div>
-              </div>
-              <Progress value={overallProgress} />
-              <p className="text-xs text-muted-foreground mt-1">
-                {completedTasks} of {totalTasks} tasks completed
-              </p>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Total Progress</span>
+              <span>{Math.round(overallProgress)}%</span>
             </div>
-            
-            <div className="space-y-4">
-              {developmentPhases.map((phase) => (
-                <div key={phase.id} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="font-medium flex items-center gap-2">
-                      {phase.icon}
-                      <span>{phase.name}</span>
-                    </div>
-                    <div>{phase.progress}%</div>
-                  </div>
-                  <Progress value={phase.progress} className={
-                    phase.progress === 100 
-                      ? "bg-muted-foreground/20" 
-                      : "bg-muted-foreground/10"
-                  } />
-                </div>
-              ))}
+            <Progress value={overallProgress} className="h-2" />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{projects?.length || 0} active projects</span>
+              <span>{projects?.filter(p => p.status === "completed").length || 0} completed</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="checklist" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="checklist">Development Checklist</TabsTrigger>
-          <TabsTrigger value="lifecycle">Agentic Lifecycle Guide</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="checklist" className="space-y-4">
-          {developmentPhases.map((phase) => (
-            <Collapsible
-              key={phase.id}
-              open={openPhase === phase.id}
-              onOpenChange={() => togglePhase(phase.id)}
-              className="border rounded-md"
-            >
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <div className={`rounded-full p-1.5 ${
-                    phase.progress === 100 
-                      ? "bg-green-100 text-green-600" 
-                      : phase.progress > 50 
-                        ? "bg-blue-100 text-blue-600" 
-                        : "bg-amber-100 text-amber-600"
-                  }`}>
-                    {phase.icon}
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-medium">{phase.name}</h3>
-                    <p className="text-sm text-muted-foreground">{phase.description}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">{phase.progress}%</span>
-                  {openPhase === phase.id ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="p-4 pt-0 border-t">
-                <div className="space-y-3">
-                  {phase.tasks.map((task) => (
-                    <div key={task.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/50">
-                      <Checkbox id={task.id} checked={task.completed} className="mt-1" />
-                      <div className="space-y-1">
-                        <label
-                          htmlFor={task.id}
-                          className={`font-medium cursor-pointer ${task.completed ? "line-through text-muted-foreground" : ""}`}
-                        >
-                          {task.title}
-                        </label>
-                        <p className="text-sm text-muted-foreground">{task.description}</p>
+      {/* Empty State */}
+      {projects?.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Rocket className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Projects Yet</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              Start tracking your development progress by creating your first project.
+            </p>
+            <AddProjectDialog onAddProject={handleAddProject} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Projects and Phases */}
+      {projects && projects.length > 0 && (
+        <Tabs defaultValue="phases" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="phases">Development Phases</TabsTrigger>
+            <TabsTrigger value="projects">Active Projects</TabsTrigger>
+            <TabsTrigger value="lifecycle">Agentic Lifecycle Guide</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="phases" className="space-y-4">
+            {developmentPhases === undefined ? (
+              // Loading skeleton for phases
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="h-6 bg-muted rounded w-1/2 mb-4"></div>
+                      <div className="h-2 bg-muted rounded w-full mb-4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-muted rounded w-3/4"></div>
+                        <div className="h-4 bg-muted rounded w-2/3"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : developmentPhases.length === 0 ? (
+              // Empty state for phases
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-8">
+                  <FileCode className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">No development phases found for this project.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              // Real phases data
+              developmentPhases.map((phase) => (
+                <Collapsible
+                  key={phase._id}
+                  open={openPhase === phase._id}
+                  onOpenChange={() => togglePhase(phase._id)}
+                  className="border rounded-md"
+                >
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <div className={`rounded-full p-1.5 ${
+                        phase.progress === 100 
+                          ? "bg-green-100 text-green-600" 
+                          : phase.progress > 50 
+                            ? "bg-blue-100 text-blue-600" 
+                            : "bg-amber-100 text-amber-600"
+                      }`}>
+                        <FileCode className="h-4 w-4" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-medium">{phase.name}</h3>
+                        <p className="text-sm text-muted-foreground">{phase.description}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          ))}
-        </TabsContent>
-        
-        <TabsContent value="lifecycle" className="space-y-4">
-          {lifecycleStages.map((stage) => (
-            <Card key={stage.id}>
-              <CardHeader className="flex flex-row items-start gap-4 pb-2">
-                <div className={`rounded-full p-2 bg-primary/10 text-primary mt-1`}>
-                  {stage.icon}
-                </div>
-                <div>
-                  <CardTitle>{stage.title}</CardTitle>
-                  <CardDescription>{stage.description}</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 ml-6 list-disc">
-                  {stage.tips.map((tip, index) => (
-                    <li key={index} className="text-sm">{tip}</li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Button variant="ghost" size="sm" className="gap-1 ml-auto">
-                  Learn More
-                  <ArrowUpRight className="h-3 w-3" />
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </TabsContent>
-      </Tabs>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium">{phase.progress}%</span>
+                      {openPhase === phase._id ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="p-4 pt-0 border-t">
+                    <div className="space-y-3">
+                      <Progress value={phase.progress} className="h-2" />
+                      {getTasksForPhase(phase._id).map((task) => (
+                        <div key={task._id} className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/50">
+                          <Checkbox 
+                            id={task._id} 
+                            checked={task.status === "completed"}
+                            onCheckedChange={() => handleTaskToggle(task._id, task.status === "completed")}
+                          />
+                          <div className="flex-1 space-y-1">
+                            <label 
+                              htmlFor={task._id} 
+                              className={`text-sm font-medium cursor-pointer ${
+                                task.status === "completed" ? "line-through text-muted-foreground" : ""
+                              }`}
+                            >
+                              {task.title}
+                            </label>
+                            {task.description && (
+                              <p className="text-xs text-muted-foreground">{task.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ))
+            )}
+          </TabsContent>
+          
+          <TabsContent value="projects" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              {projects.map((project) => (
+                <Card key={project._id}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>{project.name}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        project.status === "completed" 
+                          ? "bg-green-100 text-green-700"
+                          : project.status === "in-progress"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {project.status}
+                      </span>
+                    </CardTitle>
+                    <CardDescription>{project.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Progress</span>
+                        <span>{project.progress}%</span>
+                      </div>
+                      <Progress value={project.progress} className="h-2" />
+                      {project.startDate && project.endDate && (
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
+                          <span>End: {new Date(project.endDate).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="lifecycle" className="space-y-4">
+            {lifecycleStages.map((stage) => (
+              <Card key={stage.id}>
+                <CardHeader className="flex flex-row items-start gap-4 pb-2">
+                  <div className={`rounded-full p-2 bg-primary/10 text-primary mt-1`}>
+                    {stage.icon}
+                  </div>
+                  <div>
+                    <CardTitle>{stage.title}</CardTitle>
+                    <CardDescription>{stage.description}</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 ml-6 list-disc">
+                    {stage.tips.map((tip, index) => (
+                      <li key={index} className="text-sm">{tip}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="ghost" size="sm" className="gap-1 ml-auto">
+                    Learn More
+                    <ArrowUpRight className="h-3 w-3" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   )
 }
