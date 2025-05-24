@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-
 export function AIInsights() {
   const { user } = useUser()
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -41,7 +40,7 @@ export function AIInsights() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle className="text-lg font-semibold">AI Insights</CardTitle>
-            <CardDescription>Personalized recommendations for your project</CardDescription>
+            <CardDescription>Personalized recommendations based on your analytics data</CardDescription>
           </div>
           <div className="rounded-full bg-primary/10 p-2">
             <Brain className="h-5 w-5 text-primary animate-pulse" />
@@ -125,7 +124,7 @@ export function AIInsights() {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
           <CardTitle className="text-lg font-semibold">AI Insights</CardTitle>
-          <CardDescription>Personalized recommendations for your project</CardDescription>
+          <CardDescription>Personalized recommendations based on your analytics data</CardDescription>
         </div>
         <div className="rounded-full bg-primary/10 p-2">
           <Brain className="h-5 w-5 text-primary" />
@@ -185,3 +184,4 @@ export function AIInsights() {
     </Card>
   )
 }
+
