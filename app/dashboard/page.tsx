@@ -27,6 +27,7 @@ import { MarketingCampaigns } from "./components/marketing-campaigns"
 import { SalesTracker } from "./components/sales-tracker"
 import { InteractiveRoadmap } from "./components/interactive-roadmap"
 import { RecentActivity } from "./components/recent-activity"
+import { SeedDataButton } from "./components/seed-data-button"
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -140,7 +141,8 @@ export default function DashboardPage() {
                   <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
                   <p className="text-muted-foreground">Track and manage your agentic SaaS project</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  <SeedDataButton />
                   <Button variant="outline">Export Data</Button>
                   <Button>Create New Project</Button>
                 </div>
